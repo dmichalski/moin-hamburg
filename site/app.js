@@ -1,7 +1,6 @@
 // Moin Hamburg showcase: the real renderer (custom_components/moin_hamburg/render)
 // running in the browser with Pyodide. tools/showcase.py builds the files next to this one.
 
-const PYODIDE = 'https://cdn.jsdelivr.net/npm/pyodide@314.0.7/';
 const MOON = ['new moon', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full moon',
   'waning gibbous', 'last quarter', 'waning crescent'];
 const LABELS = {
@@ -233,8 +232,8 @@ function ics() {
 async function generator() {
   const status = $('status');
   try {
-    const { loadPyodide } = await import(`${PYODIDE}pyodide.mjs`);
-    const py = await loadPyodide({ indexURL: PYODIDE });
+    const { loadPyodide } = await import(`${data.pyodide}pyodide.mjs`);
+    const py = await loadPyodide({ indexURL: data.pyodide });
     py.FS.mkdirTree('/showcase/render');
     await Promise.all(data.files.map(async (f) => {
       const r = await fetch(`py/render/${f}`);

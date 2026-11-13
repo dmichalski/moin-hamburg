@@ -66,6 +66,9 @@ def test_site_build():
             ET.fromstring((out / 'days' / f'{day["id"]}.svg').read_text(encoding='utf-8'))
         for name in ('index.html', 'app.js', 'style.css', 'hero.svg'):
             assert (out / name).is_file(), name
+        assert not (out / 'package.json').exists()
+        assert re.fullmatch(r'https://cdn\.jsdelivr\.net/npm/pyodide@\d+\.\d+\.\d+/', data['pyodide']), data['pyodide']
+        assert 'pyodide@' not in (out / 'app.js').read_text(encoding='utf-8'), 'the version belongs in site/package.json'
         page = (out / 'index.html').read_text(encoding='utf-8')
         for ref in ('style.css', 'app.js'):
             assert ref in page

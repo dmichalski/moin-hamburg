@@ -1,5 +1,8 @@
-# Weekly update PRs. Nothing merges by itself: the tests run on the PR, a person merges.
+# Weekly update PRs. Each merges itself once the tests, the integration in Home Assistant and the showcase
+# build are green (.github/workflows/tests.yaml, job automerge); a red one waits for a person. Users only get
+# releases, so nothing here reaches them without Dennis.
 # The cooldown leaves new releases alone for a week -- a compromised release is usually found by then.
+# Security updates for known vulnerabilities come at once, without the cooldown.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -19,6 +22,17 @@ updates:
   # The integration itself has no requirements.
   - package-ecosystem: pip
     directories: ["/", "/tools"]
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 7
+
+  # site/package.json: only the version of Pyodide the showcase page loads from jsDelivr.
+  - package-ecosystem: npm
+    directory: /site
     schedule:
       interval: weekly
       day: monday

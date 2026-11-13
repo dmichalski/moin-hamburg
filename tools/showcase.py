@@ -115,13 +115,19 @@ def site_data(repo):
         'colors': {s: dict(zip(('top', 'card', 'accent', 'ground'), THEME_COLORS[s])) for s in scenes},
         'days': days, 'hero': HERO, 'texts': state.TEXTS['en'],
         'files': sorted(p.name for p in (PKG / 'render').glob('*.py')),
+        'pyodide': f'https://cdn.jsdelivr.net/npm/pyodide@{pyodide_version()}/',
     }
+
+
+def pyodide_version():
+    """The Pyodide the page loads: pinned in site/package.json, where Dependabot updates it."""
+    return json.loads((SITE / 'package.json').read_text(encoding='utf-8'))['dependencies']['pyodide']
 
 
 def build_site(out, repo, with_gif):
     out.mkdir(parents=True, exist_ok=True)
     for f in SITE.iterdir():
-        if f.is_file():
+        if f.is_file() and f.name != 'package.json':
             shutil.copy2(f, out / f.name)
     py = out / 'py' / 'render'
     py.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Pyodide for the showcase page, loaded from jsDelivr. tools/showcase.py takes the version from here; Dependabot keeps it current.",
+  "dependencies": {
+    "pyodide": "314.0.7"
+  }
+}

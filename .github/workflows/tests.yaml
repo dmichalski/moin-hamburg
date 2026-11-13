@@ -2,6 +2,7 @@ name: Tests
 
 on:
   push:
+    branches-ignore: ["dependabot/**"]   # Dependabot's branches are tested through their pull request
   pull_request:
   workflow_dispatch:
 
@@ -35,3 +36,42 @@ jobs:
           python-version: "3.14"
       - run: pip install -r requirements_test.txt
       - run: python -m pytest
+
+  showcase:
+    name: Showcase page and animation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - run: pip install --require-hashes -r tools/requirements-showcase.txt
+      - run: python3 tools/showcase.py site _site
+
+  # Dependabot's updates merge themselves once everything above is green; a red one waits for a person.
+  # Users never get main directly: they install releases, which only Dennis makes.
+  automerge:
+    name: Merge Dependabot's update
+    needs: [standalone, homeassistant, showcase]
+    # The author of the pull request, not github.actor: that one can be someone re-running the workflow.
+    # Pull requests from forks never get a writing token, whatever this file asks for.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.user.login == 'dependabot[bot]'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # merge
+      pull-requests: write   # merge
+      actions: write         # start the showcase build: a merge by this token starts no workflows itself
+    steps:
+      - run: |
+          gh pr merge --squash --delete-branch "$PR"
+          gh workflow run pages.yaml --ref "$BASE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.html_url }}
+          BASE: ${{ github.event.pull_request.base.ref }}

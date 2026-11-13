@@ -2,6 +2,7 @@ name: Validate
 
 on:
   push:
+    branches-ignore: ["dependabot/**"]   # checked through their pull request
   pull_request:
   schedule:
     - cron: "0 4 * * 1"
