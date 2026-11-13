@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moin Hamburg</title>
+<meta name="description" content="A living Hamburg skyline for Home Assistant: weather, wind, seasons, the moon, storm warnings and Hamburg's special days. Try every picture in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101a2c'/%3E%3Cpath d='M4 24h24v2H4zM7 24v-7h3v7zm5 0v-9h3v9zm5 0V9l1-3 1 3v15zm5 0v-6h3v6z' fill='%23ffc38e'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="stage" id="stage" aria-label="The picture for the current choice">
+  <div class="stage-top">
+    <h1>Moin Hamburg</h1>
+    <p class="tagline">A living Hamburg skyline for your Home Assistant dashboard</p>
+  </div>
+  <div class="mock-card" id="mock" aria-hidden="true">
+    <div class="mock-greeting" id="mock-greeting">Good evening</div>
+    <div class="mock-wish" id="mock-wish"></div>
+    <div class="mock-summary" id="mock-summary">12° · Dry for the next hours</div>
+  </div>
+  <p class="status" id="status" role="status">Loading the generator …</p>
+</header>
+
+<main>
+  <section class="panel" aria-labelledby="try-title">
+    <div class="panel-head">
+      <h2 id="try-title">Try every picture</h2>
+      <p>The real generator runs here in your browser — the same Python code that draws the background in Home Assistant. Pick a moment; the picture follows.</p>
+    </div>
+
+    <div class="controls" id="controls">
+      <fieldset class="seg" data-name="time"><legend>Time of day</legend></fieldset>
+      <fieldset class="seg" data-name="weather"><legend>Weather</legend></fieldset>
+      <fieldset class="seg" data-name="season"><legend>Season</legend></fieldset>
+      <fieldset class="seg" data-name="wind"><legend>Wind</legend></fieldset>
+      <fieldset class="seg" data-name="direction"><legend>Wind from</legend></fieldset>
+      <label class="field"><span>Moon <small>(clear nights)</small></span>
+        <select id="moon"></select></label>
+      <label class="field"><span>Weather warning</span>
+        <select id="warning"></select></label>
+      <label class="field"><span>Special day</span>
+        <select id="day"></select></label>
+      <fieldset class="checks" id="extremes"><legend>Extremes</legend></fieldset>
+      <fieldset class="checks"><legend>Display</legend>
+        <label><input type="checkbox" id="animated" checked> Animated</label>
+        <label><input type="checkbox" id="cards" checked> Dashboard card</label>
+      </fieldset>
+    </div>
+
+    <form class="keyline" id="keyform">
+      <label for="key">State key</label>
+      <input id="key" spellcheck="false" autocomplete="off" aria-describedby="key-help">
+      <button type="submit">Draw</button>
+      <button type="button" id="copy">Copy</button>
+    </form>
+    <p class="help" id="key-help">This is what <code>sensor.moin_hamburg_skyline</code> shows. Paste yours to see its picture.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="days-title">
+    <div class="panel-head">
+      <h2 id="days-title">Hamburg's special days</h2>
+      <p>One special day at a time, the most important first: a quiet day keeps the picture calm, then a birthday, then single days, then periods, then the bin lorry. Holidays come from the date; the rest from your calendars, by keyword.</p>
+    </div>
+    <ul class="days" id="days"></ul>
+  </section>
+
+  <section class="panel" aria-labelledby="cal-title">
+    <div class="panel-head">
+      <h2 id="cal-title">See the calendar days at home</h2>
+    </div>
+    <div class="cal">
+      <ol>
+        <li>Download the demo calendar: one Hamburg event a day, starting tomorrow.</li>
+        <li>In Home Assistant: <em>Settings → Devices &amp; services → Add integration → Local Calendar</em>, starting data <em>Import calendar file</em>.</li>
+        <li>In the Moin Hamburg options, add it to the calendars with Hamburg events.</li>
+      </ol>
+      <p><button type="button" id="ics">Download demo calendar (.ics)</button></p>
+      <p class="help">A keyword matches the start of an event title up to the end of a word, ignoring case; <code>*</code> stands for any text. "Dom: Winterdom" counts, "Domführung" does not. Change the keywords in the integration's options.</p>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="get-title">
+    <div class="panel-head">
+      <h2 id="get-title">Get it</h2>
+    </div>
+    <div class="get">
+      <p>Moin Hamburg is a custom integration for Home Assistant 2026.9 or newer, on <a id="repo-link" href="#">GitHub</a>.</p>
+      <ol>
+        <li>Since Home Assistant 2026.11: <em>Settings → Marketplace → Add from link</em>, enter <code id="repo-name"></code>. Before: in HACS as a custom repository of type <em>Integration</em>.</li>
+        <li>Restart, then add <em>Moin Hamburg</em> under <em>Settings → Devices &amp; services</em> and pick your weather entity.</li>
+        <li>Choose the theme <code>moin-hamburg</code> in your profile — or let the integration make it the default.</li>
+      </ol>
+      <p class="help">Images and texts are made on your Home Assistant; nothing leaves your home. Version <span id="version"></span>, MIT licence.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

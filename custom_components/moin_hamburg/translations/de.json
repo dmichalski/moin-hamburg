@@ -1,0 +1,158 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Moin Hamburg",
+        "description": "Eine gezeichnete Hamburger Skyline als Dashboard-Hintergrund, die Wetter, Warnungen und besondere Tage zeigt. Nur das Wetter ist Pflicht.",
+        "data": {
+          "weather": "Wetter",
+          "warnings": "Wetterwarnungen",
+          "event_calendars": "Kalender mit Hamburger Terminen, Geburtstagen und Ferien",
+          "bin_calendars": "Kalender der Müllabfuhr",
+          "default_theme": "Moin Hamburg als Standard-Theme setzen"
+        },
+        "data_description": {
+          "weather": "Eine Wetter-Entität mit stündlicher Vorhersage, etwa Met.no oder DWD.",
+          "warnings": "NINA-Warnungen (die Warn-Binärsensoren oder ihre Schlagzeilen-Sensoren) oder die DWD-Warnstufen-Sensoren. Sturm, Sturmflut, Gewitter, Hitze, strenger Frost und Schnee erscheinen im Bild.",
+          "event_calendars": "Termine zählen über ihren Titel, etwa „Dom“, „Hafengeburtstag“, „Geburtstag Kim“ oder „Herbstferien“. Die Stichworte lassen sich in den Optionen ändern. Feiertage brauchen keinen Kalender.",
+          "bin_calendars": "Ein Termin an einem Tag heißt Abholung: Das Müllauto fährt von 6 bis 10 Uhr durchs Bild.",
+          "default_theme": "Für alle Benutzer und Geräte. Sonst im Profil „moin-hamburg“ oder „moin-hamburg-still“ wählen."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Moin Hamburg ist schon eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Moin Hamburg",
+        "data": {
+          "weather": "Wetter",
+          "warnings": "Wetterwarnungen",
+          "event_calendars": "Kalender mit Hamburger Terminen, Geburtstagen und Ferien",
+          "bin_calendars": "Kalender der Müllabfuhr",
+          "default_theme": "Moin Hamburg als Standard-Theme setzen",
+          "disabled_days": "Besondere Tage, die wegbleiben"
+        },
+        "data_description": {
+          "weather": "Eine Wetter-Entität mit stündlicher Vorhersage, etwa Met.no oder DWD.",
+          "warnings": "NINA-Warnungen (die Warn-Binärsensoren oder ihre Schlagzeilen-Sensoren) oder die DWD-Warnstufen-Sensoren. Sturm, Sturmflut, Gewitter, Hitze, strenger Frost und Schnee erscheinen im Bild.",
+          "event_calendars": "Termine zählen über ihren Titel, etwa „Dom“, „Hafengeburtstag“, „Geburtstag Kim“ oder „Herbstferien“. Die Stichworte lassen sich in den Optionen ändern. Feiertage brauchen keinen Kalender.",
+          "bin_calendars": "Ein Termin an einem Tag heißt Abholung: Das Müllauto fährt von 6 bis 10 Uhr durchs Bild.",
+          "default_theme": "Für alle Benutzer und Geräte. Sonst im Profil „moin-hamburg“ oder „moin-hamburg-still“ wählen.",
+          "disabled_days": "Diese Tage werden nie gezeichnet."
+        },
+        "sections": {
+          "keywords": {
+            "name": "Stichworte im Kalender",
+            "description": "Durch Kommas getrennt. Ein Stichwort passt auf den Anfang eines Termintitels bis zum Wortende, Groß- und Kleinschreibung egal; * steht für beliebigen Text, etwa „*ferien“. Bei Geburtstagen ist der Rest des Titels der Name.",
+            "data": {
+              "birthday": "Geburtstag",
+              "harbour-birthday": "Hafengeburtstag",
+              "cherry-blossom": "Kirschblütenfest",
+              "pride": "CSD",
+              "blue-port": "Blue Port",
+              "dom": "Dom",
+              "school-holidays": "Ferien"
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "day": {
+      "options": {
+        "quiet": "Stiller Tag",
+        "birthday": "Geburtstag",
+        "new-years-eve": "Silvester",
+        "new-years-day": "Neujahr",
+        "epiphany": "Heilige Drei Könige",
+        "valentines": "Valentinstag",
+        "carnival": "Fasching",
+        "easter": "Ostern",
+        "ascension": "Christi Himmelfahrt",
+        "mothers-day": "Muttertag",
+        "halloween": "Halloween",
+        "st-martin": "St. Martin",
+        "st-nicholas": "Nikolaus",
+        "christmas": "Weihnachten",
+        "clock-change": "Zeitumstellung",
+        "harbour-birthday": "Hafengeburtstag",
+        "cherry-blossom": "Kirschblütenfest",
+        "pride": "CSD",
+        "blue-port": "Blue Port",
+        "solstice": "Sommersonnenwende",
+        "shooting-stars": "Sternschnuppen",
+        "first-snow": "Erster Schnee",
+        "dom": "Dom",
+        "school-holidays": "Ferien",
+        "advent": "Advent",
+        "bin-day": "Müllabfuhr"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "skyline": {
+        "name": "Skyline"
+      },
+      "greeting": {
+        "name": "Begrüßung"
+      },
+      "summary": {
+        "name": "Wetter in Kürze"
+      },
+      "special_day": {
+        "name": "Besonderer Tag",
+        "state": {
+          "none": "Keiner",
+          "quiet": "Stiller Tag",
+          "birthday": "Geburtstag",
+          "new-years-eve": "Silvester",
+          "new-years-day": "Neujahr",
+          "epiphany": "Heilige Drei Könige",
+          "valentines": "Valentinstag",
+          "carnival": "Fasching",
+          "easter": "Ostern",
+          "ascension": "Christi Himmelfahrt",
+          "mothers-day": "Muttertag",
+          "halloween": "Halloween",
+          "st-martin": "St. Martin",
+          "st-nicholas": "Nikolaus",
+          "christmas": "Weihnachten",
+          "clock-change": "Zeitumstellung",
+          "harbour-birthday": "Hafengeburtstag",
+          "cherry-blossom": "Kirschblütenfest",
+          "pride": "CSD",
+          "blue-port": "Blue Port",
+          "solstice": "Sommersonnenwende",
+          "shooting-stars": "Sternschnuppen",
+          "first-snow": "Erster Schnee",
+          "dom": "Dom",
+          "school-holidays": "Ferien",
+          "advent": "Advent",
+          "bin-day": "Müllabfuhr"
+        }
+      }
+    },
+    "switch": {
+      "animated": {
+        "name": "Animierter Hintergrund"
+      }
+    }
+  },
+  "issues": {
+    "themes_not_loaded": {
+      "title": "Die Themes von Moin Hamburg sind nicht geladen",
+      "description": "Die Integration schreibt ihre Themes nach `themes/moin-hamburg.yaml` im Konfigurationsordner, Home Assistant lädt von dort aber keine Themes. In der `configuration.yaml` ergänzen und Home Assistant neu starten:\n\n```yaml\nfrontend:\n  themes: !include_dir_merge_named themes\n```"
+    }
+  },
+  "exceptions": {
+    "weather_unavailable": {
+      "message": "Die Wetter-Entität {entity} ist nicht verfügbar."
+    }
+  }
+}

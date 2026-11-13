@@ -1,0 +1,15 @@
+{
+  "domain": "moin_hamburg",
+  "name": "Moin Hamburg",
+  "after_dependencies": ["calendar", "frontend", "weather"],
+  "codeowners": ["@dmichalski"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://github.com/dmichalski/moin-hamburg",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/dmichalski/moin-hamburg/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}
