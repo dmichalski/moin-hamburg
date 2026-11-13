@@ -10,11 +10,13 @@ on:
 permissions:
   contents: read
 
+# hassfest and the HACS action follow their branches on purpose: they check against what Home Assistant and the
+# Marketplace expect today. They run with a read-only token and no secrets.
 jobs:
   hassfest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: home-assistant/actions/hassfest@master

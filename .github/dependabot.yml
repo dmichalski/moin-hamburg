@@ -1,0 +1,28 @@
+# Weekly update PRs. Nothing merges by itself: the tests run on the PR, a person merges.
+# The cooldown leaves new releases alone for a week -- a compromised release is usually found by then.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # requirements_test.txt (Home Assistant's test harness) and tools/requirements-showcase.txt (Pillow, hashed).
+  # The integration itself has no requirements.
+  - package-ecosystem: pip
+    directories: ["/", "/tools"]
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 7
