@@ -5,10 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Only the deploy job may publish; the build job reads.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -20,10 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
-      - run: pip install pillow
+      - run: pip install --require-hashes -r tools/requirements-showcase.txt
       # Google Chrome comes with the runner; it turns the SVGs into pictures for the GIF.
       - run: python3 tools/showcase.py site _site
       - uses: actions/upload-pages-artifact@v5
@@ -34,6 +35,9 @@ jobs:
     name: Publish to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

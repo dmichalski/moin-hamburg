@@ -1,6 +1,7 @@
 """The integration in Home Assistant: setup, entities, files on disk, theme, options, removal."""
 import datetime as dt
 import pathlib
+import re
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -58,8 +59,9 @@ async def test_setup_draws_and_writes_the_theme(hass, fakes, freezer):
     key = sky.state
     assert key == 'day-clear.winter.wind-calm.event-birthday'
     assert sky.attributes['scene'] == 'day-clear' and sky.attributes['special_day'] == 'birthday'
-    assert sky.attributes['image'].startswith(f'/moin_hamburg/{key}.svg?v=')
-    assert sky.attributes['still_image'].startswith(f'/moin_hamburg/{key}-still.svg?v=')
+    image, still = sky.attributes['image'], sky.attributes['still_image']
+    assert re.fullmatch(r'/moin_hamburg/[0-9a-f]{32}\.svg\?v=[0-9a-f]{12}', image), image
+    assert still.startswith(image.split('.svg')[0] + '-still.svg?v='), still
     day = hass.states.get(SPECIAL_DAY)
     assert day.state == 'birthday'
     assert day.attributes['all'] == ['birthday', 'christmas'] and day.attributes['name'] == 'Kim'
@@ -68,8 +70,10 @@ async def test_setup_draws_and_writes_the_theme(hass, fakes, freezer):
     assert hass.states.get(SUMMARY).state == '10° · Fair, up to 10°'
     assert hass.states.get(ANIMATED).state == 'on'
 
-    assert (config(hass, 'www', 'moin_hamburg') / f'{key}.svg').read_text().startswith('<svg')
-    assert (config(hass, 'www', 'moin_hamburg') / f'{key}-still.svg').exists()
+    folder = config(hass, 'www', 'moin_hamburg')
+    assert (folder / image.split('/')[-1].split('?')[0]).read_text().startswith('<svg')
+    assert (folder / still.split('/')[-1].split('?')[0]).exists()
+    assert not any('birthday' in p.name for p in folder.iterdir())
     theme = config(hass, 'themes', 'moin-hamburg.yaml').read_text()
     assert theme.startswith('# Moin Hamburg') and 'moin-hamburg:\n' in theme and 'moin-hamburg-still:\n' in theme
     assert sky.attributes['image'] in theme and sky.attributes['still_image'] in theme
@@ -191,12 +195,32 @@ async def test_remove(hass, fakes, freezer):
 
 def test_old_images_are_pruned(tmp_path, monkeypatch):
     monkeypatch.setattr(files, 'KEEP_IMAGES', 2)
-    f = files.Files(tmp_path / 'img', tmp_path / 'themes' / 'moin-hamburg.yaml')
+    f = files.Files(tmp_path / 'img', tmp_path / 'themes' / 'moin-hamburg.yaml', secret='s1')
+    f.prepare()
+    (tmp_path / 'img' / 'day-clear.winter.wind-calm.svg').write_text('<svg/>')   # named by an older version
     for key in ('day-clear.spring.wind-calm', 'day-clear.summer.wind-calm', 'day-clear.autumn.wind-calm'):
         f.write(key, 'day-clear', True)
-    assert sorted(p.name for p in (tmp_path / 'img').iterdir()) == [
-        'day-clear.autumn.wind-calm-still.svg', 'day-clear.autumn.wind-calm.svg',
-        'day-clear.summer.wind-calm-still.svg', 'day-clear.summer.wind-calm.svg']
+    keep = ('day-clear.autumn.wind-calm', 'day-clear.summer.wind-calm')
+    assert sorted(p.name for p in (tmp_path / 'img').iterdir()) == sorted(
+        f.image_name(k, s) for k in keep for s in ('', '-still'))
+
+
+def test_image_names_hide_the_key():
+    a = files.Files('img', 'theme.yaml', secret='s1')
+    b = files.Files('img', 'theme.yaml', secret='s2')
+    key = 'day-clear.winter.wind-calm.event-birthday'
+    assert a.image_name(key) != b.image_name(key) and 'birthday' not in a.image_name(key)
+    assert a.image_name(key) == files.Files('img', 'theme.yaml', secret='s1').image_name(key)
+    with pytest.raises(ValueError):
+        files.Files('img', 'theme.yaml').image_name(key)
+
+
+async def test_image_names_survive_a_restart(hass, fakes, freezer):
+    entry = await start(hass, fakes, freezer, '2026-12-10 12:00')
+    image = hass.states.get(SKYLINE).attributes['image']
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(SKYLINE).attributes['image'] == image
 
 
 async def test_config_and_options_flow(hass, fakes, freezer):

@@ -1,8 +1,15 @@
-"""Images and theme file on disk. Blocking: runs in the executor."""
+"""Images and theme file on disk. Blocking: runs in the executor.
+
+Home Assistant serves the images without a login, like everything below www/. Their names therefore come from a
+secret of this installation, not from the state key: the key would tell anyone who guesses it whether someone here
+has a birthday today or the school holidays have begun.
+"""
 from __future__ import annotations
 
 import hashlib
+import hmac
 import pathlib
+import re
 import shutil
 from dataclasses import dataclass, replace
 
@@ -10,6 +17,7 @@ from . import render
 from .const import KEEP_IMAGES, THEME, THEME_STILL, URL_PATH
 
 HEADER = '# Moin Hamburg: rewritten by the integration whenever the picture changes. Do not edit.'
+IMAGE_NAME = re.compile(r'[0-9a-f]{32}(-still)?\.svg')
 
 
 @dataclass(frozen=True)
@@ -20,10 +28,17 @@ class Written:
 
 
 class Files:
-    def __init__(self, image_dir, theme_file):
+    def __init__(self, image_dir, theme_file, secret=''):
         self.image_dir = pathlib.Path(image_dir)
         self.theme_file = pathlib.Path(theme_file)
+        self.secret = secret
         self._last = None
+
+    def image_name(self, key, suffix=''):
+        if not self.secret:
+            raise ValueError('no secret for the image names')
+        digest = hmac.new(self.secret.encode(), key.encode(), hashlib.sha256).hexdigest()[:32]
+        return f'{digest}{suffix}.svg'
 
     def prepare(self):
         self.image_dir.mkdir(parents=True, exist_ok=True)
@@ -41,7 +56,7 @@ class Files:
         urls = []
         for moving, suffix in ((True, ''), (False, '-still')):
             svg = render.render(key, moving)
-            name = f'{key}{suffix}.svg'
+            name = self.image_name(key, suffix)
             _write(self.image_dir / name, svg)
             urls.append(f'{URL_PATH}/{name}?v={hashlib.sha256(svg.encode()).hexdigest()[:12]}')
         image, still = urls
@@ -56,8 +71,10 @@ class Files:
         return written
 
     def _prune(self):
+        """Keep the newest images; anything else in the folder goes, names from older versions first."""
         images = sorted(self.image_dir.glob('*.svg'), key=lambda p: p.stat().st_mtime, reverse=True)
-        for old in images[2 * KEEP_IMAGES:]:
+        current = [p for p in images if IMAGE_NAME.fullmatch(p.name)]
+        for old in [p for p in images if not IMAGE_NAME.fullmatch(p.name)] + current[2 * KEEP_IMAGES:]:
             old.unlink(missing_ok=True)
 
     def remove(self):

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime as dt
+import secrets
 from dataclasses import dataclass
 from typing import Any
 
@@ -79,6 +80,9 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         stored = await self.store.async_load() or {}
         self.memory = state.Memory.from_dict(stored.get('memory'))
         self.animated = bool(stored.get('animated', True))
+        self.files.secret = stored.get('secret') or secrets.token_hex(16)
+        if not stored.get('secret'):
+            await self.store.async_save(self._stored())
         await self.hass.async_add_executor_job(self.files.prepare)
         flags = self.hass.data.setdefault(DOMAIN, {})
         if not flags.get('static_path') and self.hass.http is not None:
@@ -123,8 +127,10 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
 
     def _save(self, urgent: bool) -> None:
         # The snow clocks need the time of the last update only across short restarts: hourly is enough.
-        self.store.async_delay_save(lambda: {'memory': self.memory.to_dict(), 'animated': self.animated},
-                                    10 if urgent else 3600)
+        self.store.async_delay_save(self._stored, 10 if urgent else 3600)
+
+    def _stored(self) -> dict[str, Any]:
+        return {'memory': self.memory.to_dict(), 'animated': self.animated, 'secret': self.files.secret}
 
     def _settings(self) -> state.Settings:
         keywords = dict(state.KEYWORDS)

@@ -106,7 +106,10 @@ nehmen den Namen aus dem Rest des Titels.
 Zwei Themes, beide dunkel: **moin-hamburg** (bewegt, solange der Schalter an
 ist) und **moin-hamburg-still** (bewegt sich nie; für Wand-Tablets und alte
 Telefone). Die Bilder liegen unter `/moin_hamburg/`; die neuesten 24 Zustände
-bleiben auf der Platte.
+bleiben auf der Platte. Wie alles unter `www/` sind sie ohne Anmeldung
+erreichbar, deshalb kommen ihre Namen aus einem zufälligen Geheimnis deiner
+Installation statt aus dem Zustandsschlüssel -- siehe
+[SECURITY.md](SECURITY.md) (englisch).
 
 | Entität | |
 |---|---|

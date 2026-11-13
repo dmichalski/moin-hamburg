@@ -105,6 +105,9 @@ of the title.
 Two themes, both dark: **moin-hamburg** (animated while the switch is on) and
 **moin-hamburg-still** (never moves; for wall tablets and old phones). The
 images are served from `/moin_hamburg/`; the newest 24 states stay on disk.
+Like everything below `www/`, they need no login, so their names come from a
+random secret of your installation rather than from the state key -- see
+[SECURITY.md](SECURITY.md).
 
 | Entity | |
 |---|---|
