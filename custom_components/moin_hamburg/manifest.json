@@ -2,6 +2,7 @@
   "domain": "moin_hamburg",
   "name": "Moin Hamburg",
   "after_dependencies": ["calendar", "frontend", "weather"],
+  "categories": ["weather_alerts", "local_services"],
   "codeowners": ["@dmichalski"],
   "config_flow": true,
   "dependencies": ["http"],
