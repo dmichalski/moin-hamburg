@@ -175,6 +175,19 @@ async def test_default_theme(hass, fakes, freezer):
     assert fakes.default_theme == [{'name': 'moin-hamburg', 'name_dark': 'moin-hamburg'}]
 
 
+async def test_brand_icon(hass, hass_client):
+    """Home Assistant serves the icon from brand/; the logo and the dark variants fall back to it."""
+    from homeassistant.setup import async_setup_component
+    assert await async_setup_component(hass, 'brands', {})
+    client = await hass_client()
+    brand = pathlib.Path(__file__).resolve().parent.parent / 'custom_components' / DOMAIN / 'brand'
+    for image, file in (('icon.png', 'icon.png'), ('icon@2x.png', 'icon@2x.png'), ('logo.png', 'icon.png'),
+                        ('dark_icon.png', 'icon.png'), ('dark_icon@2x.png', 'icon@2x.png')):
+        response = await client.get(f'/api/brands/integration/{DOMAIN}/{image}')
+        assert response.status == 200, image
+        assert await response.read() == (brand / file).read_bytes(), image
+
+
 async def test_weather_unavailable(hass, fakes, freezer):
     entry = await start(hass, fakes, freezer, '2026-11-10 12:00', setup=False)
     hass.states.async_set('weather.home', 'unavailable')

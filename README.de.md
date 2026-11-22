@@ -15,9 +15,6 @@ Kirschblütenfest, CSD und ein heißer Abend](https://dmichalski.github.io/moin-
 **[Jedes Bild im Browser ausprobieren](https://dmichalski.github.io/moin-hamburg/)**
 -- mit dem echten Generator, direkt auf der Seite (englisch).
 
-**Noch in Arbeit.** Generator, Zustandslogik, Integration und Showcase sind
-fertig; das erste Release folgt.
-
 ## Was das Bild zeigt
 
 | | woher |

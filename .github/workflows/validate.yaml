@@ -28,5 +28,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # The integration has no entry in home-assistant/brands yet.
+          # The icon ships with the integration (custom_components/moin_hamburg/brand), which Home Assistant
+          # reads itself; there is no entry in home-assistant/brands.
           ignore: brands

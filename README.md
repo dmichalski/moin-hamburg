@@ -15,9 +15,6 @@ fireworks, Pride and a hot evening](https://dmichalski.github.io/moin-hamburg/sh
 **[Try every picture in your browser](https://dmichalski.github.io/moin-hamburg/)**
 -- the real generator, running on the page.
 
-**Work in progress.** Renderer, state logic, integration and showcase are done;
-the first release follows.
-
 ## What the picture shows
 
 | | from |

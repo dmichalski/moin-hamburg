@@ -1,5 +1,5 @@
-"""Showcase and READMEs: the example pictures are what the integration would draw, the page has what it
-needs, and the English and German READMEs say the same.
+"""Showcase, icon and READMEs: the example pictures are what the integration would draw, the page has what
+it needs, the icon has the sizes Home Assistant expects, and the English and German READMEs say the same.
 
 Runs with pytest or on its own: python3 tests/test_showcase.py
 """
@@ -86,6 +86,19 @@ def test_readmes_match():
     for name, part in parts.items():
         assert part(en) == part(de), f'README.md and README.de.md differ in their {name}'
     assert '(README.de.md)' in en and '(README.md)' in de
+
+
+
+def test_brand_icons():
+    """brand/ holds the icon in the two sizes Home Assistant expects, as PNG with transparency (tools/brand.py)."""
+    brand = ROOT / 'custom_components' / 'moin_hamburg' / 'brand'
+    assert sorted(p.name for p in brand.iterdir()) == ['icon.png', 'icon@2x.png']
+    for name, size in (('icon.png', 256), ('icon@2x.png', 512)):
+        head = (brand / name).read_bytes()[:26]
+        assert head[:8] == b'\x89PNG\r\n\x1a\n' and head[12:16] == b'IHDR', name
+        width, height = int.from_bytes(head[16:20], 'big'), int.from_bytes(head[20:24], 'big')
+        assert (width, height) == (size, size), f'{name} is {width} x {height}'
+        assert head[25] == 6, f'{name} has no alpha channel'
 
 
 if __name__ == '__main__':
