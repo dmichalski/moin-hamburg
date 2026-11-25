@@ -14,6 +14,8 @@ ST_PAULI_WATER_LEVEL = 'd488c5cc-4de9-4631-8ce1-0db0e700b546_water_level'
 CONF_DEFAULT_THEME = 'default_theme'
 CONF_KEYWORDS = 'keywords'
 CONF_DISABLED_DAYS = 'disabled_days'
+CONF_SCHNACK = 'schnack'
+CONF_AIS_KEY = 'ais_key'
 
 THEME = 'moin-hamburg'
 THEME_STILL = 'moin-hamburg-still'

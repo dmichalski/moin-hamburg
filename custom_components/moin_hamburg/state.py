@@ -73,6 +73,9 @@ TIDE_MARGIN = .15  # of a step
 # A gauge that does not answer keeps its last picture for this long.
 WATER_HOLD = dt.timedelta(hours=1)
 
+# Big ships from AIS (ships.py decides which ones count).
+SHIPS = ('cruise', 'container')
+
 # Special days, most important first. Only one is drawn: a quiet day (Good
 # Friday, the days of remembrance in November) wins over everything and keeps
 # the picture calm, then a birthday, then single days, then periods (Dom,
@@ -82,6 +85,7 @@ PRECEDENCE = (
     'new-years-eve', 'new-years-day', 'epiphany', 'valentines', 'carnival', 'easter', 'ascension', 'mothers-day',
     'halloween', 'st-martin', 'st-nicholas', 'christmas', 'clock-change',
     'harbour-birthday', 'cherry-blossom', 'pride', 'blue-port', 'solstice', 'shooting-stars', 'first-snow',
+    'match-st-pauli', 'match-hsv',
     'dom', 'school-holidays', 'advent',
     'bin-day',
 )
@@ -96,6 +100,9 @@ KEYWORDS = {
     'blue-port': ('Blue Port',),
     'dom': ('Dom', 'Hamburger Dom', 'Frühlingsdom', 'Sommerdom', 'Winterdom'),
     'school-holidays': ('*ferien', 'School holidays'),
+    # Fixture lists put the home side first, so these find the home matches only.
+    'match-st-pauli': ('FC St. Pauli', 'Heimspiel St. Pauli', 'Millerntor'),
+    'match-hsv': ('Hamburger SV', 'HSV', 'Heimspiel HSV', 'Volksparkstadion'),
 }
 BIN_HOURS = (6, 10)  # the bin lorry shows from 6 to 10 on collection days
 
@@ -120,6 +127,17 @@ TEXTS = {
         'clear-night': 'Clear', 'clear-day': 'Fair', 'cloudy': 'Cloudy',
         'later': '{t}° · {sky}, later {low}°', 'up-to': '{t}° · {sky}, up to {high}°',
     },
+}
+# Hamburger Schnack, an option for German: High German with Hamburg words, Low German only in the wishes.
+# "Moin" all day long, as Hamburg says it.
+TEXTS['de-hh'] = {
+    **TEXTS['de'],
+    'night': 'Moin', 'morning': 'Moin', 'day': 'Moin', 'evening': 'Moin',
+    'birthday': 'Allens Gode, {name}!', 'birthday-anonymous': 'Allens Gode to’n Geburtsdag!',
+    'new-years-eve': 'Kumm goot röver!', 'new-years-day': 'Prost Niejohr!', 'easter': 'Frohe Oostern',
+    'christmas': 'Frohe Wiehnachten',
+    'rain': 'Schietwetter', 'lasting': '{t}° · {wet}, und dat bleibt so', 'until': '{t}° · {wet} bis etwa {h} Uhr, denn is dröög',
+    'clear-day': 'Kaiserwetter', 'cloudy': 'Grau in grau', 'fog': 'Waschküche',
 }
 
 
@@ -153,11 +171,13 @@ class Inputs:
     events: tuple[str, ...] = ()       # titles of the calendar events going on now
     bin_day: bool = False              # a collection is due today
     water_level: float | None = None   # cm above gauge zero at Hamburg St. Pauli; None: no gauge or no answer
+    ships: frozenset = frozenset()     # big ships in the harbour from AIS: 'cruise', 'container'
 
 
 @dataclass(frozen=True)
 class Settings:
     language: str = 'en'
+    schnack: bool = False              # Hamburger Schnack, with German only
     keywords: dict = field(default_factory=lambda: dict(KEYWORDS))
     disabled: frozenset = frozenset()  # special days not to draw
 
@@ -225,6 +245,7 @@ class State:
     moon: int             # 0 new, 4 full
     extremes: tuple
     tide: int | None      # 0 (mean low) .. 4 (mean high tide), None without a gauge
+    ships: tuple          # big ships drawn
     warning: str
     event: str            # the special day drawn, or 'none'
     events: tuple         # all special days of the moment, most important first
@@ -295,12 +316,14 @@ def update(inputs, memory=Memory(), settings=Settings()):
     if memory.tide is not None:
         parts.append(f'tide-{memory.tide}')
     parts += sorted(extremes)
+    ships = tuple(sorted(k for k in inputs.ships if k in SHIPS))
+    parts += [f'ship-{k}' for k in ships]
     if warning != 'none':
         parts.append(f'warning-{warning}')
     if event != 'none':
         parts.append(f'event-{event}')
 
-    text = TEXTS.get(settings.language, TEXTS['en'])
+    text = TEXTS['de-hh'] if settings.schnack and settings.language == 'de' else TEXTS.get(settings.language, TEXTS['en'])
     h = now.hour
     greeting = text['night' if h < 5 or h >= 22 else 'morning' if h < 11 else 'day' if h < 18 else 'evening']
     if event == 'birthday':
@@ -310,7 +333,7 @@ def update(inputs, memory=Memory(), settings=Settings()):
                                                  'christmas', 'first-snow') else ''
     state = State(key='.'.join(parts), scene=f'{tod}-{weather}', time_of_day=tod, weather=weather, season=season,
                   wind=wind, direction=direction, gust=gust, moon=moon, extremes=tuple(sorted(extremes)),
-                  tide=memory.tide, warning=warning, event=event, events=events, name=name, greeting=greeting, wish=wish,
+                  tide=memory.tide, ships=ships, warning=warning, event=event, events=events, name=name, greeting=greeting, wish=wish,
                   summary=_summary(text, now, w, hours, weather, tod))
     return state, memory
 
@@ -528,9 +551,10 @@ def _summary(text, now, w, hours, weather, tod):
         if start is not None:
             return text['from'].format(t=t, wet=wet, h=hour(start))
     cloudy = weather == 'cloudy'
+    grey = text['fog'] if 'fog' in text and w.condition == 'fog' else text['cloudy']   # only the Schnack has fog
     temps = [h.temperature for h in hours]
     if tod == 'night':
         low = round(min(_known(temps[:10]), default=t))
-        return text['later'].format(t=t, sky=text['cloudy' if cloudy else 'clear-night'], low=low)
+        return text['later'].format(t=t, sky=grey if cloudy else text['clear-night'], low=low)
     high = round(max(_known(temps[:8]), default=t))
-    return text['up-to'].format(t=t, sky=text['cloudy' if cloudy else 'clear-day'], high=high)
+    return text['up-to'].format(t=t, sky=grey if cloudy else text['clear-day'], high=high)

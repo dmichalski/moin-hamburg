@@ -18,6 +18,8 @@ Parts, separated by dots:
                               without it the water stands as at high tide
     <extreme>                 heat, cold, snow-cover, fog, thunder, storm-surge,
                               ice-drift
+    ship-<kind>               big ships from AIS: cruise (at the terminal),
+                              container (under way)
     warning-<kind>            hurricane, storm-surge, storm-gusts, thunder, heat,
                               frost, snow; balls on the signal mast for storms
     event-<day>               a special day, see layers.PLAYFUL_DAYS
@@ -35,6 +37,7 @@ from .palette import PALETTES, THEME_COLORS, TIDE_STEPS, rgba
 SEASONS = ('spring', 'summer', 'autumn', 'winter')
 WINDS = ('calm', 'windy', 'storm')
 EXTREMES = ('heat', 'cold', 'snow-cover', 'fog', 'thunder', 'storm-surge', 'ice-drift')
+SHIPS = ('cruise', 'container')
 KEY_PATTERN = re.compile(r'[a-z0-9.-]{3,200}')
 
 
@@ -53,7 +56,7 @@ def parse_key(key):
     if w[0] != 'wind' or len(w) not in (2, 3) or w[1] not in WINDS or (len(w) == 3 and w[2] not in ('east', 'west')):
         raise InvalidKey('invalid wind part')
     state = {'scene': parts[0], 'season': parts[1], 'wind': w[1], 'direction': -1 if len(w) == 3 and w[2] == 'east' else 1,
-             'moon': None, 'tide': None, 'extremes': [], 'warning': 'none', 'day': 'none'}
+             'moon': None, 'tide': None, 'extremes': [], 'ships': [], 'warning': 'none', 'day': 'none'}
     for p in parts[3:]:
         if p.startswith('moon-') and p[5:].isdigit() and int(p[5:]) < 8:
             state['moon'] = int(p[5:])
@@ -61,6 +64,8 @@ def parse_key(key):
             state['tide'] = int(p[5:])
         elif p in EXTREMES:
             state['extremes'].append(p)
+        elif p.startswith('ship-') and p[5:] in SHIPS:
+            state['ships'].append(p[5:])
         elif p.startswith('warning-') and len(p) > 8:
             state['warning'] = p[8:]
         elif p.startswith('event-') and len(p) > 6:
@@ -75,7 +80,7 @@ def render(key, animated=True):
     s = parse_key(key)
     tod, weather = s['scene'].split('-')
     ctx = _layers.Context(tod, weather, s['season'], s['wind'], s['direction'], s['moon'], s['extremes'],
-                          s['warning'], s['day'], animated, key, tide=s['tide'])
+                          s['warning'], s['day'], animated, key, tide=s['tide'], ships=s['ships'])
     fragments = _layers.layers(ctx, PALETTES[s['scene']])
     return _scene.compose(s['scene'], animated, wind=s['wind'], direction=s['direction'], moon=s['moon'],
                           tide=s['tide'], css=_layers.LAYER_CSS, **fragments)

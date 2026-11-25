@@ -70,9 +70,11 @@ LAYER_CSS = """
 class Context:
     """The parsed state, plus the random source and the animation switch."""
 
-    def __init__(self, tod, weather, season, wind, direction, moon, extremes, warning, day, animated, seed, tide=None):
+    def __init__(self, tod, weather, season, wind, direction, moon, extremes, warning, day, animated, seed, tide=None,
+                 ships=()):
         self.tod, self.weather, self.season, self.wind = tod, weather, season, wind
         self.water = BASE + ((TIDE_STEPS - tide) * TIDE_DROP if tide is not None else 0)  # the waterline
+        self.ships = set(ships)
         self.dir, self.moon, self.extremes = direction, moon, set(extremes)
         self.warning, self.day, self.animated = warning, day, animated
         self.rng = random.Random(seed)
@@ -254,6 +256,52 @@ def pack_ice(ctx):
         rim.append(f'L{num(max(x, 0))} {num(top + u(2, 6))}')
     rim.append('Z')
     return (f'<g>{drift}</g><path d="{" ".join(rim)}" fill="{color}" stroke="{stroke}" stroke-width=".6"/>')
+
+
+def _mirrored(fragment, waterline, opacity=.2):
+    """The fragment and its reflection below the waterline."""
+    return f'{fragment}<g transform="matrix(1 0 0 -1 0 {num(2 * waterline)})" opacity="{opacity}">{fragment}</g>'
+
+
+def cruise_ship(ctx):
+    """A cruise ship lying at the terminal right of the Michel, bow to the east; lit decks after dark."""
+    hull, window, window_op = {'day': ('#f3f6f9', '#3a4a60', .5), 'dusk': ('#ddd3d8', '#ffd59a', .85),
+                               'night': ('#8d97a8', '#ffd27a', 1)}[ctx.tod]
+    s = (f'<path d="M0 -26 H214 L232 -31 L222 0 H6 Z" fill="{hull}"/>'
+         '<path d="M6 0 L2 -8 H228 L222 0 Z" fill="#1f2f4a"/>'
+         f'<path d="M14 -26 V-44 H206 V-26 Z M22 -44 V-57 H196 V-44 Z M36 -57 V-68 H178 V-57 Z" fill="{hull}"/>'
+         '<path d="M14 -44 H206 M22 -57 H196" stroke="#000" stroke-opacity=".12" stroke-width="1"/>'
+         '<path d="M96 -68 L100 -86 H120 L123 -68 Z" fill="#2a3446"/><rect x="99" y="-82" width="22" height="3" fill="#c9d3e0"/>')
+    rows = ''.join(f'<rect x="{x}" y="{y}" width="3" height="2"/>'
+                   for y, x0, x1 in ((-37, 20, 202), (-51, 28, 192), (-63, 42, 174), (-18, 12, 210))
+                   for x in range(x0, x1, 6))
+    s += f'<g fill="{window}" opacity="{window_op}">{rows}</g>'
+    s += ''.join(f'<ellipse cx="{x}" cy="-45" rx="4.2" ry="2" fill="#ff8a3d"/>' for x in range(30, 196, 15))
+    return _mirrored(f'<g transform="translate({OX + 252} {num(ctx.water + 2)}) scale(.92)">{s}</g>', ctx.water + 2)
+
+
+def container_ship(ctx):
+    """A big container ship under way, bow first upstream into the harbour, slowly crossing the near fairway."""
+    u = ctx.uniform
+    dim = .55 if ctx.night else .8 if ctx.tod == 'dusk' else 1
+    colours = ['#c0392b', '#2e86c1', '#27ae60', '#d68910', '#7f8c8d', '#884ea0', '#1f618d', '#a04000']
+    boxes = []
+    for x in range(44, 284, 11):
+        for tier in range(int(u(3, 6))):
+            boxes.append(f'<rect x="{x}" y="{-20 - tier * 6}" width="10" height="5.6" fill="{ctx.pick(colours)}"/>')
+    s = (f'<g opacity="{dim}">{"".join(boxes)}</g>'
+         '<path d="M0 -14 H292 L302 -19 L294 0 H8 Z" fill="#2d3a48"/><path d="M8 0 L4 -5 H297 L294 0 Z" fill="#8a2a24"/>'
+         '<path d="M10 -14 V-46 H36 V-14 Z" fill="#e8ecf0"/><path d="M8 -46 H38 V-50 H8 Z" fill="#d4dae1"/>'
+         '<path d="M18 -50 V-58 H28 V-50 Z" fill="#2a3446"/>')
+    if ctx.tod != 'day':
+        s += ('<g fill="#ffd27a">' + ''.join(f'<rect x="{x}" y="-42" width="3" height="2"/>' for x in range(13, 34, 5)) + '</g>'
+              '<circle cx="23" cy="-60" r="1.4" fill="#fff"/><circle cx="300" cy="-20" r="1.3" fill="#ff5a4f"/>')
+    y = ctx.water + 20
+    inner = f'<g transform="scale(.78)">{_mirrored(s, 0, .18)}</g>'
+    d, dl = u(600, 760), -u(0, 600)
+    if not ctx.animated:
+        dl = -d * .6  # the still image shows it in front of the cranes
+    return move(ctx, -300, y, 1400, y, d, dl, inner)
 
 
 def storm_surge(ctx, water_color):
@@ -836,6 +884,27 @@ def solstice(ctx):
                 f'<g {cls}>{rays}</g></g>')
 
 
+def floodlight(ctx, club):
+    """A home match: the stadium lights glow over the roofs -- the Millerntor just behind the Elbphilharmonie and
+    the Michel, the Volksparkstadion smaller and fainter, far off in the west. Returns (defs, fragment behind the
+    city); without club colours, the light is the same for both."""
+    x, size = (OX + 186, 1) if club == 'match-st-pauli' else (OX + 26, .7)
+    strength = {'day': .35, 'dusk': .8, 'night': 1}[ctx.tod] * (1 if size == 1 else .75)
+    y = 260  # just above the roofs
+    defs = ('<radialGradient id="fx-flood"><stop offset="0" stop-color="#f6f9ff" stop-opacity=".95"/>'
+            '<stop offset=".4" stop-color="#e4edff" stop-opacity=".45"/><stop offset="1" stop-color="#d2e1ff" stop-opacity="0"/>'
+            '</radialGradient>')
+    beams = ''.join(f'<path d="M-2 0 L2 0 L{num(12 * size)} {num(-140 * size)} L{num(-12 * size)} {num(-140 * size)} Z" '
+                    f'transform="translate({num(x + (i - 2.5) * 15 * size)} {y}) rotate({num((i - 2.5) * 6)})"/>'
+                    for i in range(6)) if ctx.tod != 'day' else ''
+    lamps = ''.join(f'<rect x="{num(x + dx * size)}" y="{num(y - 7 * size)}" width="{num(13 * size)}" height="{num(2.6 * size)}" rx="1"/>'
+                    for dx in (-48, -24, 10, 34))
+    pulse = ' class="fx-pulse"' if ctx.animated else ''
+    return defs, (f'<g opacity="{num(strength)}"><ellipse cx="{x}" cy="{y}" rx="{num(130 * size)}" ry="{num(85 * size)}" '
+                  f'fill="url(#fx-flood)"{pulse}/><g fill="#eef4ff" opacity=".08">{beams}</g>'
+                  f'<g fill="#ffffff" filter="url(#fx-glow)">{lamps}</g></g>')
+
+
 # --- Composition ------------------------------------------------------------------
 GLOW_DEFS = ('<filter id="fx-glow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="1.4" result="b"/>'
              '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
@@ -854,7 +923,7 @@ HEAT_SHIMMER = ('<filter id="fx-heat" x="-2%" y="-10%" width="104%" height="120%
 # Sunday of the Dead) is not in here and so gets none.
 PLAYFUL_DAYS = {'valentines', 'easter', 'cherry-blossom', 'harbour-birthday', 'ascension', 'mothers-day', 'solstice', 'pride', 'dom', 'shooting-stars',
                 'blue-port', 'school-holidays', 'halloween', 'st-martin', 'first-snow', 'advent', 'st-nicholas', 'christmas', 'new-years-eve', 'new-years-day',
-                'epiphany', 'carnival', 'clock-change', 'birthday', 'bin-day'}
+                'epiphany', 'carnival', 'clock-change', 'birthday', 'bin-day', 'match-st-pauli', 'match-hsv'}
 
 
 def layers(ctx, palette):
@@ -897,6 +966,9 @@ def layers(ctx, palette):
     if f == 'solstice':
         d2, behind = solstice(ctx)
         defs += d2
+    if f in ('match-st-pauli', 'match-hsv'):
+        d2, behind = floodlight(ctx, f)
+        defs += d2
     if 'heat' in ex:
         defs += HEAT_SHIMMER
     # on the ferry
@@ -915,6 +987,10 @@ def layers(ctx, palette):
             over += f'<circle cx="{OX + 317}" cy="99" r="210" fill="url(#fx-heat-sun)" class="fx-pulse"/>'
     if 'storm-surge' in ex:
         over += storm_surge(ctx, water)
+    if 'cruise' in ctx.ships:
+        over += cruise_ship(ctx)
+    if 'container' in ctx.ships:
+        over += container_ship(ctx)
     if 'ice-drift' in ex:
         over += pack_ice(ctx)
     elif 'cold' in ex:

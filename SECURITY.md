@@ -10,9 +10,14 @@ Only the latest release gets fixes.
 
 ## What the integration does
 
-* It has no dependencies beyond Home Assistant and makes no network
-  connections. It reads the weather, the sun, the warning sensors and
-  calendars you choose, and nothing else.
+* It has no dependencies beyond Home Assistant. It reads the weather, the sun,
+  the warning sensors, calendars and the water level sensor you choose, and
+  nothing else.
+* Without an aisstream.io key it makes no network connections. With one, it
+  keeps a single websocket to `stream.aisstream.io` and sends the key and a
+  fixed window around the Hamburg harbour, nothing about your home. Home
+  Assistant stores the key with the integration's options, like any other
+  integration's credentials; the diagnostics leave it out.
 * It writes into the configuration folder:
   * images to `www/moin_hamburg/`
   * the themes to `themes/moin-hamburg.yaml`
@@ -24,3 +29,5 @@ Only the latest release gets fixes.
   installation, not from the state key, so nobody can probe which picture is
   showing (a birthday, the school holidays).
 * Names from birthday events appear in the greeting, never in the picture.
+* `image.moin_hamburg_skyline` serves the same picture through Home
+  Assistant's image proxy, which needs a login.

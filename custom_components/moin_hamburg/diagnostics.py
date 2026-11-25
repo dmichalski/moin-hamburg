@@ -1,8 +1,8 @@
 """Diagnostics: what Moin Hamburg saw and made of it, for bug reports.
 
 Left out on purpose: the secret behind the image names and the image URLs (anyone with a URL could fetch the
-picture without a login), calendar titles (they may name people; only the special day each one matched is kept)
-and the birthday name in the state and the wish.
+picture without a login), calendar titles (they may name people; only the special day each one matched is kept),
+the birthday name in the state and the wish, and the aisstream.io key.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
 from . import MoinHamburgConfigEntry, state
-from .const import DOMAIN, THEME
+from .const import CONF_AIS_KEY, DOMAIN, THEME
 from .coordinator import FRONTEND_DEFAULT_THEME, FRONTEND_THEMES
 
 TO_REDACT = {'name', 'wish'}
@@ -27,7 +27,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: MoinHam
     inputs = coordinator.last_inputs
     out: dict[str, Any] = {
         'version': str(integration.version),
-        'options': dict(entry.options),
+        'options': async_redact_data(dict(entry.options), {CONF_AIS_KEY}),
         'language': settings.language,
         'animated': coordinator.animated,
         'themes': {'loaded': THEME in hass.data.get(FRONTEND_THEMES, {}),
@@ -35,6 +35,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: MoinHam
         'memory': coordinator.memory.to_dict(),
         'state': None,
         'inputs': None,
+        'ais': coordinator.ais.diagnostics() if coordinator.ais else None,
     }
     if coordinator.data is not None:
         out['state'] = async_redact_data(dataclasses.asdict(coordinator.data.state), TO_REDACT)
@@ -48,5 +49,6 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: MoinHam
             'events': [m[0] if m else None for m in matched],
             'bin_day': inputs.bin_day,
             'water_level': inputs.water_level,
+            'ships': sorted(inputs.ships),
         }
     return out

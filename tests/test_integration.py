@@ -164,6 +164,13 @@ async def test_german(hass, fakes, freezer):
     assert hass.states.get(GREETING).state == 'Guten Morgen'
 
 
+async def test_hamburger_schnack(hass, fakes, freezer):
+    hass.config.language = 'de'
+    await start(hass, fakes, freezer, '2026-11-10 08:00', options={'schnack': True})
+    assert hass.states.get(GREETING).state == 'Moin'
+    assert hass.states.get(SUMMARY).state == '10° · Kaiserwetter, bis 10°'
+
+
 async def test_themes_not_loaded(hass, fakes, freezer):
     fakes.themes_loaded = False
     await start(hass, fakes, freezer, '2026-11-10 12:00')
@@ -338,6 +345,112 @@ async def test_diagnostics(hass, fakes, freezer, hass_client, hass_admin_user):
     text = str(data)
     secret = entry.runtime_data.files.secret
     assert 'Kim' not in text and 'Zahnarzt' not in text and secret not in text and '/moin_hamburg/' not in text
+
+
+async def fake_aisstream(handler):
+    """A websocket server on localhost that stands in for aisstream.io; handler(ws, subscription) talks."""
+    from aiohttp import web
+    from aiohttp.test_utils import TestServer
+
+    async def stream(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        await handler(ws, await ws.receive_json())
+        return ws
+    app = web.Application()
+    app.router.add_get('/v0/stream', stream)
+    server = TestServer(app, host='127.0.0.1')
+    await server.start_server()
+    return server, f'ws://127.0.0.1:{server.port}/v0/stream'
+
+
+def ais(mmsi, kind, **body):
+    return {'MessageType': kind, 'MetaData': {'MMSI': mmsi}, 'Message': {kind: {'UserID': mmsi, 'Valid': True, **body}}}
+
+
+async def test_ais_feed(hass, monkeypatch, socket_enabled):
+    """The feed subscribes to the harbour window, follows the reports and asks for a new picture when that changes."""
+    import asyncio
+    from custom_components.moin_hamburg import ais as ais_module, ships
+    seen = []
+
+    async def talk(ws, sub):
+        seen.append(sub)
+        await ws.send_json({'MessageType': 'SubscriptionConfirmation', 'Message': {'CompressionEnabled': True}})
+        await ws.send_json(ais(1, 'ShipStaticData', Name='AIDAPRIMA', Type=60, Dimension={'A': 250, 'B': 50, 'C': 16, 'D': 16}))
+        await ws.send_json(ais(1, 'PositionReport', Sog=0.1))
+        async for _ in ws:
+            pass
+    server, url = await fake_aisstream(talk)
+    monkeypatch.setattr(ships, 'URL', url)
+    changed = asyncio.Event()
+
+    async def on_change():
+        changed.set()
+    feed = ais_module.AisFeed(hass, 'secret-key', on_change)
+    task = hass.async_create_background_task(feed.run(), 'test AIS')
+    await asyncio.wait_for(changed.wait(), 10)
+    assert seen == [ships.subscription('secret-key')]
+    assert feed.shown() == {'cruise'} and feed.connected and feed.messages == 3
+    assert feed.diagnostics()['big_ships'][0]['name'] == 'AIDAPRIMA'
+    task.cancel()
+    await server.close()
+
+
+async def test_ais_key_in_the_options(hass, fakes, freezer, monkeypatch, socket_enabled):
+    """The key is checked once against aisstream.io; a refused key or no answer keeps the form open."""
+    from custom_components.moin_hamburg import ships
+    answers = []
+
+    async def talk(ws, sub):
+        await ws.send_json(answers.pop(0))
+    server, url = await fake_aisstream(talk)
+    monkeypatch.setattr(ships, 'URL', url)
+    entry = await start(hass, fakes, freezer, '2027-05-01 12:00')
+
+    async def options(**changes):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        return await hass.config_entries.options.async_configure(
+            result['flow_id'], {'weather': 'weather.home', 'keywords': {}, **changes})
+    answers.append({'error': 'Api Key Is Not Valid'})
+    assert (await options(ais_key='wrong'))['errors'] == {'ais_key': 'ais_invalid_key'}
+    answers.append({'MessageType': 'SubscriptionConfirmation', 'Message': {'CompressionEnabled': True}})
+    assert (await options(ais_key=' right '))['type'] is FlowResultType.CREATE_ENTRY
+    assert entry.options['ais_key'] == 'right'
+    await server.close()
+    await hass.async_block_till_done()
+    assert (await options(ais_key='right'))['type'] is FlowResultType.CREATE_ENTRY   # unchanged: not checked again
+    await hass.async_block_till_done()
+    assert (await options(ais_key='another'))['errors'] == {'ais_key': 'ais_cannot_connect'}
+    assert (await options())['type'] is FlowResultType.CREATE_ENTRY and 'ais_key' not in entry.options
+    await hass.async_block_till_done()
+
+
+async def test_ships_in_the_picture(hass, fakes, freezer, monkeypatch, hass_client, hass_admin_user):
+    """With a key the big ships go into the key; the diagnostics show the feed, never the key."""
+    from homeassistant.setup import async_setup_component
+    from pytest_homeassistant_custom_component.components.diagnostics import get_diagnostics_for_config_entry
+    from custom_components.moin_hamburg import ais as ais_module
+
+    async def no_connection(self):
+        self.harbour.feed(ais(7, 'ShipStaticData', Type=71, Dimension={'A': 300, 'B': 66, 'C': 25, 'D': 26}), dt_util.utcnow())
+        self.harbour.feed(ais(7, 'PositionReport', Sog=11), dt_util.utcnow())
+    monkeypatch.setattr(ais_module.AisFeed, 'run', no_connection)
+    assert await async_setup_component(hass, 'http', {})
+    entry = await start(hass, fakes, freezer, '2027-05-01 12:00', options={'ais_key': 'secret-key'})
+    await hass.async_block_till_done()
+    freezer.tick(dt.timedelta(minutes=1))
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(SKYLINE).state == 'day-clear.spring.wind-calm.ship-container'
+    assert await async_setup_component(hass, 'diagnostics', {})
+    client = await fresh_client(hass, hass_client, hass_admin_user)
+
+    async def same_client():
+        return client
+    data = await get_diagnostics_for_config_entry(hass, same_client, entry)
+    assert data['options']['ais_key'] == '**REDACTED**' and 'secret-key' not in str(data)
+    assert data['ais']['shown'] == ['container'] and data['inputs']['ships'] == ['container']
 
 
 async def test_config_and_options_flow(hass, fakes, freezer):

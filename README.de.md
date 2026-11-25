@@ -28,6 +28,7 @@ Kirschblütenfest, CSD und ein heißer Abend](https://dmichalski.github.io/moin-
 | Hitze, Kälte, Nebel, Gewitter, Schneedecke, Sturmflut | Temperaturen, Vorhersage, Warnungen; Schneedecke nach zwei Stunden Schnee bei 1 °C oder weniger, weg nach sechs Stunden über 3 °C; Sturmflut auch vom Pegel, ab 1,5 m über dem mittleren Hochwasser |
 | Eisgang: Packeis auf der Elbe, Eis an der Kaimauer | vier Tage Frost ohne einen Wert über 0 °C; weg nach zwei Tagen ohne Frost |
 | Sturmbälle am Signalmast | Sturm- und Orkanwarnungen |
+| Große Schiffe: ein Kreuzfahrtschiff am Terminal, ein Containerschiff in Fahrt | AIS-Meldungen von aisstream.io, nur mit Schlüssel (siehe *Schiffe*) |
 | Besondere Tage | das Datum, deine Kalender, die Müllabfuhr |
 
 Gezeichnet wird immer nur ein besonderer Tag, der wichtigste: Ein stiller Tag
@@ -43,6 +44,7 @@ Advent), dann das Müllauto.
 | Sternschnuppen | 10. bis 14. August und 12. bis 15. Dezember, nach Sonnenuntergang |
 | Erster Schnee | der Tag, an dem es zum ersten Mal 15 Minuten schneit, Oktober bis April |
 | Geburtstag, Hafengeburtstag, Kirschblütenfest, CSD, Blue Port, Dom, Ferien | deine Kalender, über Stichworte |
+| Heimspiel FC St. Pauli (Flutlicht am Millerntor), Heimspiel HSV (am Volksparkstadion) | deine Kalender, über Stichworte, solange das Spiel läuft |
 | Müllabfuhr | ein beliebiger Termin heute in einem Müllkalender, von 6 bis 10 Uhr morgens |
 
 Namen aus Geburtstagen erscheinen nie im Bild, nur in der Begrüßung.
@@ -69,6 +71,8 @@ frontend:
 
 Fehlt das, meldet die Integration es als Reparaturhinweis.
 
+Was sich in welcher Version geändert hat: [CHANGELOG.md](CHANGELOG.md).
+
 ## Einrichtung
 
 *Einstellungen → Geräte & Dienste → Integration hinzufügen → Moin Hamburg.*
@@ -82,14 +86,36 @@ Fehlt das, meldet die Integration es als Reparaturhinweis.
 | Wasserstand Hamburg St. Pauli | optional; der Wasserstands-Sensor des Pegels „HAMBURG ST. PAULI“ |
 | Moin Hamburg als Standard-Theme setzen | für alle Benutzer und Geräte; sonst das Theme im Profil wählen |
 
-In den Optionen kommen die Kalender-Stichworte und die besonderen Tage dazu,
-die wegbleiben sollen.
+In den Optionen kommen die Kalender-Stichworte, die besonderen Tage, die
+wegbleiben sollen, der Hamburger Schnack und der Schlüssel für die Schiffe dazu.
 
 Für die Tide zuerst die Integration *PEGELONLINE* hinzufügen, die Home
 Assistant mitbringt, und die Station „HAMBURG ST. PAULI“ wählen. Moin Hamburg
 liest ihren Wasserstand jede Viertelstunde. Andere Pegel lehnt der Dialog ab:
 Die Tidemarken sind die von St. Pauli. Ohne Pegel steht die Elbe wie bei
 Hochwasser.
+
+Für die Heimspiele einen Kalender mit den Spielen zu den Kalendern mit
+Hamburger Terminen nehmen: einen eigenen oder einen abonnierten Spielplan. In
+Spielplänen steht der Gastgeber vorn, also leuchtet „FC St. Pauli – Werder
+Bremen“ das Millerntor an und „Werder Bremen – FC St. Pauli“ nicht.
+
+Der *Hamburger Schnack* (nur auf Deutsch) grüßt den ganzen Tag mit „Moin“,
+nennt Regen „Schietwetter“, Nebel „Waschküche“ und einen klaren Tag
+„Kaiserwetter“ und wünscht auf Platt: „Kumm goot röver!“ zu Silvester,
+„Allens Gode, Kim!“ zum Geburtstag.
+
+### Schiffe
+
+Mit einem kostenlosen Schlüssel von [aisstream.io](https://aisstream.io) (mit
+GitHub anmelden, dann *Account*) zeigt das Bild ein Kreuzfahrtschiff am
+Terminal und große Containerschiffe in Fahrt, nach den AIS-Meldungen in
+Echtzeit. Den Schlüssel in den Optionen eintragen; Moin Hamburg prüft ihn
+einmal. Danach hält es eine Verbindung zu aisstream.io und sendet nur den
+Schlüssel und einen Ausschnitt um den Hafen, vom Kreuzfahrtterminal Altona bis
+zur HafenCity. aisstream.io gibt keine Garantie: Ist der Dienst weg, bleiben
+die Schiffe eben weg. Ohne Schlüssel baut Moin Hamburg keine eigenen
+Verbindungen auf.
 
 ### Kalender-Stichworte
 
@@ -106,6 +132,8 @@ nehmen den Namen aus dem Rest des Titels.
 | Blue Port | `Blue Port` | „Blue Port 2027“ |
 | Dom | `Dom`, `Hamburger Dom`, `Frühlingsdom`, `Sommerdom`, `Winterdom` | „Dom: Winterdom“, aber nicht „Domführung“ |
 | Ferien | `*ferien`, `School holidays` | „Herbstferien“, aber nicht „Ferienwohnung“ |
+| Heimspiel FC St. Pauli | `FC St. Pauli`, `Heimspiel St. Pauli`, `Millerntor` | „FC St. Pauli – Werder Bremen“ |
+| Heimspiel HSV | `Hamburger SV`, `HSV`, `Heimspiel HSV`, `Volksparkstadion` | „HSV – Hertha BSC“, aber nicht „Hertha BSC – HSV“ |
 
 ## Themes und Entitäten
 
@@ -145,19 +173,22 @@ content: |
 
 ## Entwicklung
 
-Zwei Teile sind reines Python, ohne Abhängigkeiten und ohne Imports aus Home
+Drei Teile sind reines Python, ohne Abhängigkeiten und ohne Imports aus Home
 Assistant:
 
 * `custom_components/moin_hamburg/render/` -- der Generator: Zustandsschlüssel
   rein, SVG raus.
 * `custom_components/moin_hamburg/state.py` -- der Zustand: Wetter, Sonne,
   Warnungen und Kalendertitel rein, Zustandsschlüssel und Dashboard-Texte raus.
+* `custom_components/moin_hamburg/ships.py` -- AIS-Meldungen rein, die großen
+  Schiffe fürs Bild raus.
 
 Diese Tests laufen ohne jede Installation:
 
 ```sh
-python3 tests/test_golden.py                 # 199 Fälle, Byte für Byte
+python3 tests/test_golden.py                 # jeder Fall, Byte für Byte
 python3 tests/test_state.py                  # Zustandslogik
+python3 tests/test_ships.py                  # welche AIS-Meldungen zählen
 python3 tests/test_showcase.py               # Showcase-Beispiele, Seite, READMEs
 python3 tools/gallery.py out/                # alle Fälle als SVG + out/index.html
 python3 tools/gallery.py out/ night-cloudy.autumn.wind-calm.event-dom

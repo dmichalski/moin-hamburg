@@ -28,6 +28,7 @@ fireworks, Pride and a hot evening](https://dmichalski.github.io/moin-hamburg/sh
 | Heat, cold, fog, thunder, snow cover, storm surge | temperatures, forecast, warnings; snow cover after two hours of snow at 1 °C or less, gone after six hours above 3 °C; a storm surge also from the gauge, 1.5 m above mean high tide |
 | Ice drift: pack ice on the Elbe, ice along the quay | four days of frost without a reading above 0 °C; gone after two days without frost |
 | Storm balls on the signal mast | storm and hurricane warnings |
+| Big ships: a cruise ship at the terminal, a container ship under way | AIS reports from aisstream.io, only with a key (see *Ships*) |
 | Special days | the date, your calendars, the bin collection |
 
 Only one special day is drawn at a time, the most important: a quiet day
@@ -43,6 +44,7 @@ school holidays, Advent), then the bin lorry.
 | Shooting stars | 10 to 14 August and 12 to 15 December, after sunset |
 | First snow | the day it first snows for 15 minutes, October to April |
 | Birthday, harbour birthday, cherry blossom festival, Pride (CSD), Blue Port, Dom, school holidays | your calendars, by keyword |
+| Home match FC St. Pauli (floodlights at the Millerntor), home match HSV (at the Volksparkstadion) | your calendars, by keyword, while the match lasts |
 | Bin day | any event in a bin collection calendar today, from 6 to 10 in the morning |
 
 Birthday names never appear in the picture, only in the greeting.
@@ -69,6 +71,8 @@ frontend:
 
 If it doesn't, the integration raises a repair issue that says so.
 
+What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+
 ## Setup
 
 *Settings → Devices & services → Add integration → Moin Hamburg.*
@@ -82,12 +86,34 @@ If it doesn't, the integration raises a repair issue that says so.
 | Water level at Hamburg St. Pauli | optional; the water level sensor of the gauge "HAMBURG ST. PAULI" |
 | Make Moin Hamburg the default theme | for all users and devices; otherwise choose the theme in your profile |
 
-The options add the calendar keywords and the special days to leave out.
+The options add the calendar keywords, the special days to leave out,
+Hamburger Schnack and the key for the ships.
 
 For the tide, first add the *PEGELONLINE* integration, which comes with Home
 Assistant, and pick the station "HAMBURG ST. PAULI". Moin Hamburg reads its
 water level every quarter of an hour. Other gauges are refused: the tide marks
 are those of St. Pauli. Without the gauge the Elbe stands as at high tide.
+
+For the home matches, add a calendar with the fixtures to the calendars with
+Hamburg events: one of your own, or a fixture list you subscribe to. Fixture
+lists name the home side first, so "FC St. Pauli – Werder Bremen" lights the
+Millerntor and "Werder Bremen – FC St. Pauli" does not.
+
+*Hamburger Schnack* (German only) greets with "Moin" all day long, calls rain
+"Schietwetter", fog "Waschküche" and a clear day "Kaiserwetter", and wishes in
+Low German: "Kumm goot röver!" on New Year's Eve, "Allens Gode, Kim!" on a
+birthday.
+
+### Ships
+
+With a free key from [aisstream.io](https://aisstream.io) (sign in with GitHub,
+then *Account*), the picture shows a cruise ship lying at a terminal and big
+container ships under way, from live AIS reports. Enter the key in the options;
+Moin Hamburg checks it once. It then keeps one connection to aisstream.io and
+sends nothing but the key and a window around the harbour, from the Altona
+cruise terminal to the HafenCity. aisstream.io gives no guarantee: if it is
+down, the ships simply stay away. Without a key, Moin Hamburg opens no
+connections of its own.
 
 ### Calendar keywords
 
@@ -104,6 +130,8 @@ of the title.
 | Blue Port | `Blue Port` | "Blue Port 2027" |
 | Dom | `Dom`, `Hamburger Dom`, `Frühlingsdom`, `Sommerdom`, `Winterdom` | "Dom: Winterdom", but not "Domführung" |
 | School holidays | `*ferien`, `School holidays` | "Herbstferien", but not "Ferienwohnung" |
+| Home match FC St. Pauli | `FC St. Pauli`, `Heimspiel St. Pauli`, `Millerntor` | "FC St. Pauli – Werder Bremen" |
+| Home match HSV | `Hamburger SV`, `HSV`, `Heimspiel HSV`, `Volksparkstadion` | "HSV – Hertha BSC", but not "Hertha BSC – HSV" |
 
 ## Themes and entities
 
@@ -142,17 +170,20 @@ content: |
 
 ## Development
 
-Two parts are plain Python with no dependencies and no Home Assistant imports:
+Three parts are plain Python with no dependencies and no Home Assistant imports:
 
 * `custom_components/moin_hamburg/render/` -- the renderer: state key in, SVG out.
 * `custom_components/moin_hamburg/state.py` -- the state: weather, sun,
   warnings and calendar titles in, state key and dashboard texts out.
+* `custom_components/moin_hamburg/ships.py` -- AIS reports in, the big ships to
+  draw out.
 
 These tests run without anything installed:
 
 ```sh
-python3 tests/test_golden.py                 # 199 cases, byte for byte
+python3 tests/test_golden.py                 # every case, byte for byte
 python3 tests/test_state.py                  # state logic
+python3 tests/test_ships.py                  # which AIS reports count
 python3 tests/test_showcase.py               # showcase examples, page, READMEs
 python3 tools/gallery.py out/                # all cases as SVG + out/index.html
 python3 tools/gallery.py out/ night-cloudy.autumn.wind-calm.event-dom

@@ -40,7 +40,9 @@
           "bin_calendars": "Bin collection calendars",
           "water_level": "Water level at Hamburg St. Pauli",
           "default_theme": "Make Moin Hamburg the default theme",
-          "disabled_days": "Special days to leave out"
+          "disabled_days": "Special days to leave out",
+          "schnack": "Hamburger Schnack",
+          "ais_key": "aisstream.io API key (ships)"
         },
         "data_description": {
           "weather": "A weather entity with an hourly forecast, for example Met.no or DWD.",
@@ -49,7 +51,9 @@
           "bin_calendars": "Any event on a day means a collection: the bin lorry drives through the picture from 6 to 10 in the morning.",
           "water_level": "The PEGELONLINE gauge “HAMBURG ST. PAULI” (a Home Assistant integration). The Elbe in the picture rises and falls with the tide, and from 1.5 m above mean high tide it floods the quay as a storm surge.",
           "default_theme": "For all users and devices. Without it, pick “moin-hamburg” or “moin-hamburg-still” in your profile.",
-          "disabled_days": "These days are never drawn."
+          "disabled_days": "These days are never drawn.",
+          "schnack": "With German as the Home Assistant language: “Moin” all day, “Schietwetter” for rain, Low German wishes.",
+          "ais_key": "Optional. A free key from aisstream.io (sign in with GitHub, then Account). With it, Moin Hamburg keeps one connection to aisstream.io and shows cruise ships at the terminal and big container ships under way. Only the key and a window around the harbour are sent."
         },
         "sections": {
           "keywords": {
@@ -62,14 +66,18 @@
               "pride": "Pride (CSD)",
               "blue-port": "Blue Port",
               "dom": "Dom funfair",
-              "school-holidays": "School holidays"
+              "school-holidays": "School holidays",
+              "match-st-pauli": "Home match FC St. Pauli",
+              "match-hsv": "Home match HSV"
             }
           }
         }
       }
     },
     "error": {
-      "not_st_pauli": "This is not the gauge Hamburg St. Pauli. The tide marks only fit that one."
+      "not_st_pauli": "This is not the gauge Hamburg St. Pauli. The tide marks only fit that one.",
+      "ais_invalid_key": "aisstream.io did not accept this key.",
+      "ais_cannot_connect": "aisstream.io did not answer. Try again later."
     }
   },
   "selector": {
@@ -97,6 +105,8 @@
         "solstice": "Summer solstice",
         "shooting-stars": "Shooting stars",
         "first-snow": "First snow",
+        "match-st-pauli": "Home match FC St. Pauli",
+        "match-hsv": "Home match HSV",
         "dom": "Dom funfair",
         "school-holidays": "School holidays",
         "advent": "Advent",
@@ -146,6 +156,8 @@
           "solstice": "Summer solstice",
           "shooting-stars": "Shooting stars",
           "first-snow": "First snow",
+          "match-st-pauli": "Home match FC St. Pauli",
+          "match-hsv": "Home match HSV",
           "dom": "Dom funfair",
           "school-holidays": "School holidays",
           "advent": "Advent",

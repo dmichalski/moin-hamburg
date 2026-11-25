@@ -11,12 +11,15 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
 from . import state
+from .ais import async_check_key
 from .const import (
+    CONF_AIS_KEY,
     CONF_BIN_CALENDARS,
     CONF_DEFAULT_THEME,
     CONF_DISABLED_DAYS,
     CONF_EVENT_CALENDARS,
     CONF_KEYWORDS,
+    CONF_SCHNACK,
     CONF_WARNINGS,
     CONF_WATER_LEVEL,
     CONF_WEATHER,
@@ -51,6 +54,9 @@ def _options_schema():
         vol.Required(CONF_KEYWORDS): section(keywords, {'collapsed': True}),
         vol.Optional(CONF_DISABLED_DAYS): selector.SelectSelector(selector.SelectSelectorConfig(
             options=list(state.PRECEDENCE), multiple=True, translation_key='day')),
+        vol.Optional(CONF_SCHNACK): selector.BooleanSelector(),
+        vol.Optional(CONF_AIS_KEY): selector.TextSelector(selector.TextSelectorConfig(
+            type=selector.TextSelectorType.PASSWORD)),
     })
 
 
@@ -66,6 +72,9 @@ def _clean(user_input: dict[str, Any]) -> dict[str, Any]:
                                              if w.strip())
                               for day in state.KEYWORDS}
         out[CONF_DISABLED_DAYS] = list(user_input.get(CONF_DISABLED_DAYS, []))
+        out[CONF_SCHNACK] = bool(user_input.get(CONF_SCHNACK, False))
+        if str(user_input.get(CONF_AIS_KEY) or '').strip():
+            out[CONF_AIS_KEY] = str(user_input[CONF_AIS_KEY]).strip()
     return out
 
 
@@ -99,6 +108,10 @@ class MoinHamburgConfigFlow(ConfigFlow, domain=DOMAIN):
 class MoinHamburgOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors = _errors(self.hass, user_input) if user_input is not None else {}
+        key = str((user_input or {}).get(CONF_AIS_KEY) or '').strip()
+        if key and key != self.config_entry.options.get(CONF_AIS_KEY) and not errors:
+            if problem := await async_check_key(self.hass, key):
+                errors[CONF_AIS_KEY] = problem
         if user_input is not None and not errors:
             return self.async_create_entry(data=_clean(user_input))
         current = dict(user_input or self.config_entry.options)

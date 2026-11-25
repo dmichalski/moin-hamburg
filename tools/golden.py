@@ -5,8 +5,8 @@
     golden.py hashes   write tests/golden/hashes.json from the current renderer
 
 The cases cover every scene, season, wind level and direction, moon phase,
-tide step, extreme, warning and special day at least once, by day, at dusk and
-at night.
+tide step, extreme, big ship, warning and special day at least once, by day, at
+dusk and at night.
 
 Regenerate the hashes only for an intended visual change, and look at the
 pictures before committing them (tools/gallery.py).
@@ -33,7 +33,7 @@ EVENTS = {'quiet': 'spring', 'new-years-eve': 'winter', 'new-years-day': 'winter
           'st-nicholas': 'winter', 'christmas': 'winter', 'birthday': 'summer', 'harbour-birthday': 'spring',
           'cherry-blossom': 'spring', 'pride': 'summer', 'blue-port': 'summer', 'dom': 'autumn',
           'school-holidays': 'summer', 'bin-day': 'autumn', 'advent': 'winter', 'solstice': 'summer',
-          'shooting-stars': 'summer', 'first-snow': 'autumn'}
+          'shooting-stars': 'summer', 'first-snow': 'autumn', 'match-st-pauli': 'autumn', 'match-hsv': 'spring'}
 
 
 def cases():
@@ -49,6 +49,12 @@ def cases():
     out += ['night-clear.autumn.wind-calm.moon-4.tide-0', 'dusk-clear.summer.wind-calm.tide-1.event-harbour-birthday',
             'day-snow.winter.wind-windy.tide-0.cold.snow-cover', 'night-rain.autumn.wind-storm.tide-4.storm-surge',
             'night-snow.winter.wind-calm.tide-1.cold.ice-drift.snow-cover']
+    for ship in ('cruise', 'container'):
+        for scene in ('day-clear', 'dusk-cloudy', 'night-clear'):
+            out.append(f'{scene}.summer.wind-calm.ship-{ship}')
+    out += ['night-clear.summer.wind-calm.moon-4.ship-container.ship-cruise',
+            'day-rain.winter.wind-windy.tide-0.ice-drift.ship-cruise.ship-container',
+            'dusk-clear.autumn.wind-calm.ship-cruise.event-match-st-pauli']
     for ex, season in EXTREMES.items():
         for scene in ('day-clear', 'night-clear', 'dusk-cloudy'):
             out.append(f'{scene}.{season}.wind-windy.{ex}')

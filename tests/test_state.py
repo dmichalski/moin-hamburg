@@ -29,12 +29,13 @@ def forecast(now, conditions, temperature=12, gust=20):
 
 
 def run(now, *, elevation=30, condition='sunny', temperature=12, gust=20, wind=None, bearing=270, coming=None,
-        warnings=(), events=(), bin_day=False, water=None, memory=Memory(), settings=DE, hours=None):
+        warnings=(), events=(), bin_day=False, water=None, ships=frozenset(), memory=Memory(), settings=DE, hours=None):
     now = at(now) if isinstance(now, str) else now
     if hours is None:
         hours = forecast(now, coming or [condition] * 12, temperature, gust)
     w = Weather(condition, temperature, gust, wind, bearing, hours)
-    return state.update(Inputs(now, elevation, w, tuple(warnings), tuple(events), bin_day, water), memory, settings)
+    return state.update(Inputs(now, elevation, w, tuple(warnings), tuple(events), bin_day, water, frozenset(ships)),
+                        memory, settings)
 
 
 def event(now, **kw):
@@ -117,7 +118,8 @@ def test_every_key_draws():
                 {'condition': 'snowy', 'gust': 90, 'temperature': -10, 'warnings': ['ORKAN', 'STURMFLUT'],
                  'memory': Memory(snow_cover=True)}, {'condition': 'fog', 'temperature': 33, 'warnings': ['SCHNEE']},
                 {'water': 300}, {'water': 560, 'condition': 'rainy'}, {'water': 950, 'gust': 80},
-                {'temperature': -4, 'water': 400, 'memory': Memory(ice_drift=True, freezing_since=at('2025-12-28 00:00'))}]
+                {'temperature': -4, 'water': 400, 'memory': Memory(ice_drift=True, freezing_since=at('2025-12-28 00:00'))},
+                {'ships': {'cruise', 'container'}, 'water': 700}]
     t, n, days = at('2026-01-01 00:00'), 0, set()
     while t.year == 2026:
         s, _ = run(t, elevation=(t.hour - 12) * 4, events=['Geburtstag Kim', 'Dom', 'Herbstferien'][n % 4:n % 4 + 1],
@@ -125,7 +127,8 @@ def test_every_key_draws():
         render.parse_key(s.key)
         days.update(s.events)
         t, n = t + dt.timedelta(hours=5), n + 1
-    assert days == set(state.PRECEDENCE) - {'first-snow', 'cherry-blossom', 'pride', 'blue-port', 'harbour-birthday'}
+    assert days == set(state.PRECEDENCE) - {'first-snow', 'cherry-blossom', 'pride', 'blue-port', 'harbour-birthday',
+                                            'match-st-pauli', 'match-hsv'}
 
 
 # -- water level: tide and storm surge at Hamburg St. Pauli ---------------------------------------------
@@ -172,6 +175,12 @@ def test_gauge_without_answer_keeps_its_picture_for_an_hour():
     assert s.tide == 4 and 'storm-surge' in s.extremes
     s, m = run('2026-11-25 13:00', memory=m)
     assert s.tide is None and not s.extremes and m.water_seen is None
+
+
+def test_ships_in_the_key():
+    s, _ = run('2027-05-01 12:00', ships={'container', 'cruise', 'submarine'}, water=500)
+    assert s.key == 'day-clear.spring.wind-calm.tide-2.ship-container.ship-cruise' and s.ships == ('container', 'cruise')
+    assert 'ship' not in run('2027-05-01 12:00')[0].key
 
 
 # -- warnings ------------------------------------------------------------------------------------------
@@ -305,6 +314,12 @@ def test_calendar_keywords():
     assert m('Birthday: Kim', k) == ('birthday', 'Kim')
     assert m('Geburtstag', k) == ('birthday', '')
     assert m('Zahnarzt', k) is None
+    assert m('FC St. Pauli – Werder Bremen', k)[0] == 'match-st-pauli'         # the home side comes first
+    assert m('Werder Bremen – FC St. Pauli', k) is None
+    assert m('Hamburger SV - Hertha BSC', k)[0] == 'match-hsv' and m('HSV vs. Bayern', k)[0] == 'match-hsv'
+    assert m('Hertha BSC – Hamburger SV', k) is None and m('Hamburger Dom', k)[0] == 'dom'
+    s, _ = run('2026-11-28 18:30', elevation=-20, events=['Winterdom', 'FC St. Pauli – Werder Bremen'])
+    assert s.event == 'match-st-pauli' and s.events == ('match-st-pauli', 'dom')  # the match beats the Dom
     s, _ = run('2026-05-10 12:00', events=['Geburtstag'])
     assert s.wish == 'Alles Gute zum Geburtstag!'
 
@@ -456,6 +471,21 @@ def test_summary():
 
 
 # -- moon ----------------------------------------------------------------------------------------------
+
+
+def test_hamburger_schnack():
+    hh = Settings(language='de', schnack=True)
+    s, _ = run('2026-11-10 08:00', condition='rainy', coming=['rainy', 'rainy'] + ['cloudy'] * 10, settings=hh)
+    assert s.greeting == 'Moin' and s.summary == '12° · Schietwetter bis etwa 11 Uhr, denn is dröög'
+    assert run('2026-11-10 12:00', condition='fog', coming=['fog'] * 12, settings=hh)[0].summary == '12° · Waschküche, bis 12°'
+    assert run('2026-11-10 12:00', settings=hh)[0].summary == '12° · Kaiserwetter, bis 12°'
+    assert run('2026-12-31 20:00', elevation=-30, settings=hh)[0].wish == 'Kumm goot röver!'
+    assert run('2026-07-10 12:00', events=['Geburtstag Kim'], settings=hh)[0].wish == 'Allens Gode, Kim!'
+    # without the option, and in English, nothing changes
+    assert run('2026-11-10 12:00', condition='fog', coming=['fog'] * 12)[0].summary == '12° · Bewölkt, bis 12°'
+    s, _ = run('2026-07-10 12:00', settings=Settings(language='en', schnack=True))
+    assert s.greeting == 'Good afternoon' and s.summary == '12° · Fair, up to 12°'
+    assert set(state.TEXTS['de-hh']) == set(state.TEXTS['de']) | {'fog'}
 
 def test_moon_as_home_assistant_saw_it():
     """sensor.moon_phase on a live Home Assistant, 1 to 10 November 2026."""

@@ -12,6 +12,7 @@ const LABELS = {
   direction: { west: 'West', east: 'East' },
   extremes: { heat: 'Heat', cold: 'Cold', 'snow-cover': 'Snow cover', fog: 'Fog', thunder: 'Thunder',
     'storm-surge': 'Storm surge', 'ice-drift': 'Ice drift' },
+  ships: { cruise: 'Cruise ship at the terminal', container: 'Container ship under way' },
   warnings: { hurricane: 'Hurricane', 'storm-surge': 'Storm surge', 'storm-gusts': 'Storm gusts', thunder: 'Thunderstorm',
     heat: 'Heat', frost: 'Severe frost', snow: 'Snow' },
 };
@@ -20,13 +21,14 @@ const TEMPERATURE = { spring: 13, summer: 23, autumn: 9, winter: 1 };
 const $ = (id) => document.getElementById(id);
 let data, render = null, parseKey = null, url = null, pending = 0, HELP = '';
 const s = { time: 'dusk', weather: 'clear', season: 'summer', wind: 'calm', direction: 'west', moon: 4, tide: 'none',
-  warning: 'none', day: 'none', extremes: new Set(), animated: true, cards: true };
+  warning: 'none', day: 'none', extremes: new Set(), ships: new Set(), animated: true, cards: true };
 
 function key() {
   const p = [`${s.time}-${s.weather}`, s.season, `wind-${s.wind}` + (s.wind === 'calm' ? '' : `-${s.direction}`)];
   if (s.time === 'night' && s.weather === 'clear') p.push(`moon-${s.moon}`);
   if (s.tide !== 'none') p.push(`tide-${s.tide}`);
   p.push(...[...s.extremes].sort());
+  p.push(...[...s.ships].sort().map((k) => `ship-${k}`));
   if (s.warning !== 'none') p.push(`warning-${s.warning}`);
   if (s.day !== 'none') p.push(`event-${s.day}`);
   return p.join('.');
@@ -36,7 +38,7 @@ function fromKey(k) {
   const st = parseKey(k).toJs({ dict_converter: Object.fromEntries });
   const [time, weather] = st.scene.split('-');
   Object.assign(s, { time, weather, season: st.season, wind: st.wind, direction: st.direction < 0 ? 'east' : 'west',
-    warning: st.warning, day: st.day, extremes: new Set(st.extremes) });
+    warning: st.warning, day: st.day, extremes: new Set(st.extremes), ships: new Set(st.ships) });
   if (st.moon !== null && st.moon !== undefined) s.moon = st.moon;
   s.tide = st.tide === null || st.tide === undefined ? 'none' : String(st.tide);
 }
@@ -120,6 +122,7 @@ function sync() {
   $('warning').value = s.warning;
   $('day').value = s.day;
   for (const c of document.querySelectorAll('#extremes input')) c.checked = s.extremes.has(c.value);
+  for (const c of document.querySelectorAll('#ships input')) c.checked = s.ships.has(c.value);
   $('animated').checked = s.animated;
   $('cards').checked = s.cards;
 }
@@ -142,6 +145,15 @@ function controls() {
       draw();
     });
     $('extremes').append(l);
+  }
+  for (const k of data.ships) {
+    const l = document.createElement('label');
+    l.innerHTML = `<input type="checkbox" value="${k}"> ${LABELS.ships[k] || k}`;
+    l.querySelector('input').addEventListener('change', (ev) => {
+      ev.target.checked ? s.ships.add(k) : s.ships.delete(k);
+      draw();
+    });
+    $('ships').append(l);
   }
   $('moon').addEventListener('change', (e) => { s.moon = Number(e.target.value); draw(); });
   $('tide').addEventListener('change', (e) => { s.tide = e.target.value; draw(); });
@@ -197,10 +209,11 @@ function guess(k) {
   const [time, weather] = p[0].split('-');
   const w = p[2].split('-');
   const out = { time, weather, season: p[1], wind: w[1], direction: w[2] || 'west', tide: 'none', warning: 'none',
-    day: 'none', extremes: new Set() };
+    day: 'none', extremes: new Set(), ships: new Set() };
   for (const x of p.slice(3)) {
     if (x.startsWith('moon-')) out.moon = Number(x.slice(5));
     else if (x.startsWith('tide-')) out.tide = x.slice(5);
+    else if (x.startsWith('ship-')) out.ships.add(x.slice(5));
     else if (x.startsWith('warning-')) out.warning = x.slice(8);
     else if (x.startsWith('event-')) out.day = x.slice(6);
     else out.extremes.add(x);
@@ -243,7 +256,7 @@ async function generator() {
     const py = await loadPyodide({ indexURL: data.pyodide });
     py.FS.mkdirTree('/showcase/render');
     await Promise.all(data.files.map(async (f) => {
-      const r = await fetch(`py/render/${f}`);
+      const r = await fetch(`py/render/${f}?v=${data.build}`);
       if (!r.ok) throw new Error(`py/render/${f}: ${r.status}`);
       py.FS.writeFile(`/showcase/render/${f}`, await r.text());
     }));
@@ -262,7 +275,7 @@ async function generator() {
 }
 
 async function main() {
-  data = await (await fetch('data.json')).json();
+  data = await (await fetch('data.json', { cache: 'no-cache' })).json();
   HELP = $('key-help').innerHTML;
   Object.assign(s, guess(data.hero));
   controls();

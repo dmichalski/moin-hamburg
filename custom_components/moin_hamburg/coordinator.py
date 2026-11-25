@@ -22,11 +22,14 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import SpeedConverter, TemperatureConverter
 
 from . import state
+from .ais import AisFeed
 from .const import (
+    CONF_AIS_KEY,
     CONF_BIN_CALENDARS,
     CONF_DISABLED_DAYS,
     CONF_EVENT_CALENDARS,
     CONF_KEYWORDS,
+    CONF_SCHNACK,
     CONF_WARNINGS,
     CONF_WATER_LEVEL,
     CONF_WEATHER,
@@ -78,6 +81,8 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         self.memory = state.Memory()
         self.animated = True
         self.last_inputs: state.Inputs | None = None   # for the diagnostics
+        key = str(entry.options.get(CONF_AIS_KEY) or '').strip()
+        self.ais = AisFeed(hass, key, self.async_request_refresh) if key else None
 
     @property
     def options(self) -> dict[str, Any]:
@@ -107,6 +112,9 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
                  async_track_state_change_event(
                      self.hass, [self.options[CONF_WEATHER], *self.options.get(CONF_WARNINGS, [])], refresh)]
 
+        if self.ais:
+            self.config_entry.async_create_background_task(self.hass, self.ais.run(), f'{DOMAIN} AIS feed')
+
         def stop() -> None:
             for unsubscribe in stops:
                 unsubscribe()
@@ -123,7 +131,8 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         day = dt_util.start_of_local_day(now)
         bin_day = bool(await self._calendar_titles(self.options.get(CONF_BIN_CALENDARS, []), day, day + dt.timedelta(days=1)))
         inputs = state.Inputs(now, self._sun_elevation(), await self._weather(now), tuple(self._warnings()),
-                              tuple(titles), bin_day, self._water_level())
+                              tuple(titles), bin_day, self._water_level(),
+                              self.ais.shown() if self.ais else frozenset())
         self.last_inputs = inputs
         result, memory = state.update(inputs, self.memory, self.settings())
         # The clocks of the last update and the last gauge reading move every time; neither needs saving at once.
@@ -150,7 +159,8 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
                 keywords[day] = tuple(w.strip() for w in str(text or '').split(',') if w.strip())
         language = 'de' if (self.hass.config.language or '').lower().startswith('de') else 'en'
         return state.Settings(language=language, keywords=keywords,
-                              disabled=frozenset(self.options.get(CONF_DISABLED_DAYS, [])))
+                              disabled=frozenset(self.options.get(CONF_DISABLED_DAYS, [])),
+                              schnack=bool(self.options.get(CONF_SCHNACK)))
 
     def _sun_elevation(self) -> float:
         from astral.sun import elevation  # Home Assistant's own dependency, as for sun.sun

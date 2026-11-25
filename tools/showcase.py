@@ -11,6 +11,7 @@ for every special day. The animation needs Google Chrome (headless) to turn the
 SVGs into pictures and Pillow to join them into a GIF.
 """
 import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -81,6 +82,13 @@ DAYS = {
                        '10 to 14 August and 12 to 15 December, after dark.'),
     'first-snow': ('day-snow.winter.wind-calm.event-first-snow',
                    'The day it first snows for 15 minutes, October to April, once a winter.'),
+    'match-st-pauli': ('night-cloudy.autumn.wind-calm.event-match-st-pauli',
+                       'An event in your calendars, by keyword, while it lasts: the floodlights of the Millerntor, just '
+                       'behind the Elbphilharmonie. Fixture lists name the home side first, so the keywords find the home '
+                       'matches.', 'FC St. Pauli – Werder Bremen'),
+    'match-hsv': ('dusk-clear.spring.wind-calm.event-match-hsv',
+                  'An event in your calendars, by keyword, while it lasts: the floodlights of the Volksparkstadion, '
+                  'far off in the west.', 'Hamburger SV – Hertha BSC'),
     'dom': ('night-cloudy.autumn.wind-calm.event-dom', 'An event in your calendars, by keyword.', 'Winterdom'),
     'school-holidays': ('day-clear.summer.wind-calm.event-school-holidays',
                         'An event in your calendars, by keyword.', 'Herbstferien'),
@@ -111,10 +119,13 @@ def site_data(repo):
         'times': [t for t in ('day', 'dusk', 'night') if any(s.startswith(t + '-') for s in scenes)],
         'weathers': [w for w in ('clear', 'cloudy', 'rain', 'snow') if any(s.endswith('-' + w) for s in scenes)],
         'seasons': list(render.SEASONS), 'winds': list(render.WINDS), 'extremes': list(render.EXTREMES),
+        'ships': list(render.SHIPS),
         'warnings': [kind for kind, _ in state.WARNINGS],
         'colors': {s: dict(zip(('top', 'card', 'accent', 'ground'), THEME_COLORS[s])) for s in scenes},
         'days': days, 'hero': HERO, 'texts': state.TEXTS['en'],
         'files': sorted(p.name for p in (PKG / 'render').glob('*.py')),
+        # in the file URLs, so a browser never mixes renderer files of two versions from its cache
+        'build': hashlib.sha256(b''.join(p.read_bytes() for p in sorted((PKG / 'render').glob('*.py')))).hexdigest()[:12],
         'pyodide': f'https://cdn.jsdelivr.net/npm/pyodide@{pyodide_version()}/',
     }
 

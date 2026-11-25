@@ -40,7 +40,9 @@
           "bin_calendars": "Kalender der Müllabfuhr",
           "water_level": "Wasserstand Hamburg St. Pauli",
           "default_theme": "Moin Hamburg als Standard-Theme setzen",
-          "disabled_days": "Besondere Tage, die wegbleiben"
+          "disabled_days": "Besondere Tage, die wegbleiben",
+          "schnack": "Hamburger Schnack",
+          "ais_key": "aisstream.io-API-Schlüssel (Schiffe)"
         },
         "data_description": {
           "weather": "Eine Wetter-Entität mit stündlicher Vorhersage, etwa Met.no oder DWD.",
@@ -49,7 +51,9 @@
           "bin_calendars": "Ein Termin an einem Tag heißt Abholung: Das Müllauto fährt von 6 bis 10 Uhr durchs Bild.",
           "water_level": "Der PEGELONLINE-Pegel „HAMBURG ST. PAULI“ (eine Integration von Home Assistant). Die Elbe im Bild steigt und fällt mit der Tide und läuft ab 1,5 m über dem mittleren Hochwasser als Sturmflut über die Kaimauer.",
           "default_theme": "Für alle Benutzer und Geräte. Sonst im Profil „moin-hamburg“ oder „moin-hamburg-still“ wählen.",
-          "disabled_days": "Diese Tage werden nie gezeichnet."
+          "disabled_days": "Diese Tage werden nie gezeichnet.",
+          "schnack": "Bei deutscher Sprache: den ganzen Tag „Moin“, bei Regen „Schietwetter“, Wünsche auf Platt.",
+          "ais_key": "Optional. Ein kostenloser Schlüssel von aisstream.io (mit GitHub anmelden, dann Account). Damit hält Moin Hamburg eine Verbindung zu aisstream.io und zeigt Kreuzfahrtschiffe am Terminal und große Containerschiffe in Fahrt. Gesendet werden nur der Schlüssel und ein Ausschnitt um den Hafen."
         },
         "sections": {
           "keywords": {
@@ -62,14 +66,18 @@
               "pride": "CSD",
               "blue-port": "Blue Port",
               "dom": "Dom",
-              "school-holidays": "Ferien"
+              "school-holidays": "Ferien",
+              "match-st-pauli": "Heimspiel FC St. Pauli",
+              "match-hsv": "Heimspiel HSV"
             }
           }
         }
       }
     },
     "error": {
-      "not_st_pauli": "Das ist nicht der Pegel Hamburg St. Pauli. Nur zu dem passen die Tidemarken."
+      "not_st_pauli": "Das ist nicht der Pegel Hamburg St. Pauli. Nur zu dem passen die Tidemarken.",
+      "ais_invalid_key": "aisstream.io hat diesen Schlüssel nicht angenommen.",
+      "ais_cannot_connect": "aisstream.io hat nicht geantwortet. Später noch einmal versuchen."
     }
   },
   "selector": {
@@ -97,6 +105,8 @@
         "solstice": "Sommersonnenwende",
         "shooting-stars": "Sternschnuppen",
         "first-snow": "Erster Schnee",
+        "match-st-pauli": "Heimspiel FC St. Pauli",
+        "match-hsv": "Heimspiel HSV",
         "dom": "Dom",
         "school-holidays": "Ferien",
         "advent": "Advent",
@@ -146,6 +156,8 @@
           "solstice": "Sommersonnenwende",
           "shooting-stars": "Sternschnuppen",
           "first-snow": "Erster Schnee",
+          "match-st-pauli": "Heimspiel FC St. Pauli",
+          "match-hsv": "Heimspiel HSV",
           "dom": "Dom",
           "school-holidays": "Ferien",
           "advent": "Advent",
