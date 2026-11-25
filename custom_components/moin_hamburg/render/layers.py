@@ -10,7 +10,7 @@ import math
 import random
 
 from .city import CRANES
-from .palette import BASE, H, OX, W
+from .palette import BASE, H, OX, TIDE_DROP, TIDE_STEPS, W
 from .scene import num
 
 LAYER_CSS = """
@@ -70,8 +70,9 @@ LAYER_CSS = """
 class Context:
     """The parsed state, plus the random source and the animation switch."""
 
-    def __init__(self, tod, weather, season, wind, direction, moon, extremes, warning, day, animated, seed):
+    def __init__(self, tod, weather, season, wind, direction, moon, extremes, warning, day, animated, seed, tide=None):
         self.tod, self.weather, self.season, self.wind = tod, weather, season, wind
+        self.water = BASE + ((TIDE_STEPS - tide) * TIDE_DROP if tide is not None else 0)  # the waterline
         self.dir, self.moon, self.extremes = direction, moon, set(extremes)
         self.warning, self.day, self.animated = warning, day, animated
         self.rng = random.Random(seed)
@@ -220,6 +221,39 @@ def ice_floes(ctx):
         inner = f'<g transform="scale({num(g)})"><polygon points="{points}" fill="{color}" stroke="{stroke}" stroke-width=".8" opacity=".9"/></g>'
         s.append(move(ctx, x0, y, x0 - 1700, y, d, -u(0, d), inner))
     return ''.join(s)
+
+
+def pack_ice(ctx):
+    """Ice drift: after days of hard frost the Elbe carries pack ice downstream, and ice rims the quay wall.
+
+    One group of floes, drawn twice a picture-width apart, drifts left by one width: the loop has no seam
+    and costs a single moving part. Its keyframes come along, so pictures without ice keep their CSS.
+    """
+    u = ctx.uniform
+    color, stroke = ('#7d8aa3', '#5a6680') if ctx.night else ('#eef4fa', '#b6c8da')
+    top = ctx.water
+    floes = []
+    for _ in range(130):
+        y = top + 5 + (720 - top - 5) * ctx.rng.random() ** 1.8   # crowded towards the far bank
+        g, w = .45 + (y - 338) / 382 * 1.4, u(22, 64)
+        h = w * u(.2, .32)
+        points = ' '.join(f'{num(math.cos(j / 8 * 2 * math.pi) * w / 2 * q)},{num(math.sin(j / 8 * 2 * math.pi) * h / 2 * q)}'
+                          for j, q in ((j, u(.7, 1.1)) for j in range(8)))
+        x = u(0, W)
+        floe = f'<polygon points="{points}" fill="{color}" stroke="{stroke}" stroke-width=".8" opacity="{num(u(.8, .95))}"/>'
+        floes += [f'<g transform="translate({num(x + dx)} {num(y)}) scale({num(g)})">{floe}</g>' for dx in (0, W)]
+    drift = ''.join(floes)
+    if ctx.animated:
+        drift = (f'<style>.fx-icedrift{{animation:fx-icedrift var(--d) linear infinite}}'
+                 f'@keyframes fx-icedrift{{from{{transform:translateX(0)}}to{{transform:translateX(-{W}px)}}}}</style>'
+                 f'<g class="fx-icedrift" style="--d:{num(u(700, 900))}s">{drift}</g>')
+    rim = [f'M0 {top - 1} H{W} V{top + 2}']
+    x = W
+    while x > 0:
+        x -= u(8, 22)
+        rim.append(f'L{num(max(x, 0))} {num(top + u(2, 6))}')
+    rim.append('Z')
+    return (f'<g>{drift}</g><path d="{" ".join(rim)}" fill="{color}" stroke="{stroke}" stroke-width=".6"/>')
 
 
 def storm_surge(ctx, water_color):
@@ -881,9 +915,11 @@ def layers(ctx, palette):
             over += f'<circle cx="{OX + 317}" cy="99" r="210" fill="url(#fx-heat-sun)" class="fx-pulse"/>'
     if 'storm-surge' in ex:
         over += storm_surge(ctx, water)
-    if 'cold' in ex:
+    if 'ice-drift' in ex:
+        over += pack_ice(ctx)
+    elif 'cold' in ex:
         over += ice_floes(ctx)
-    if ctx.wind != 'calm' or 'storm-surge' in ex:
+    if (ctx.wind != 'calm' or 'storm-surge' in ex) and 'ice-drift' not in ex:  # pack ice keeps the waves down
         over += whitecaps(ctx, 60 if ctx.wind == 'storm' or 'storm-surge' in ex else 30)
     if ctx.season == 'summer' and not night:
         over += sailboats(ctx, near)

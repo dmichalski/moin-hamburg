@@ -283,6 +283,63 @@ async def test_only_the_st_pauli_gauge(hass, fakes, freezer):
     await hass.async_block_till_done()
 
 
+async def fresh_client(hass, hass_client, user):
+    """A client with a token from after the clock was moved; the fixture's own has expired by then."""
+    from pytest_homeassistant_custom_component.common import CLIENT_ID
+    refresh = await hass.auth.async_create_refresh_token(user, CLIENT_ID)
+    return await hass_client(hass.auth.async_create_access_token(refresh))
+
+
+async def test_image_entity(hass, fakes, freezer, hass_client, hass_admin_user):
+    """The picture behind the login: animated while the switch is on, else the still one."""
+    from homeassistant.setup import async_setup_component
+    assert await async_setup_component(hass, 'http', {})
+    await start(hass, fakes, freezer, '2026-12-10 12:00')
+    client = await fresh_client(hass, hass_client, hass_admin_user)
+    skyline = hass.states.get(SKYLINE).attributes
+    response = await client.get('/api/image_proxy/image.moin_hamburg_skyline')
+    assert response.status == 200 and response.content_type == 'image/svg+xml'
+    assert await response.read() == image_file(hass, skyline['image']).read_bytes()
+    before = hass.states.get('image.moin_hamburg_skyline').state
+    freezer.tick(dt.timedelta(seconds=5))
+    await hass.services.async_call('switch', 'turn_off', {'entity_id': ANIMATED}, blocking=True)
+    await hass.async_block_till_done()
+    assert hass.states.get('image.moin_hamburg_skyline').state != before    # last updated moved on
+    response = await client.get('/api/image_proxy/image.moin_hamburg_skyline')
+    still = await response.read()
+    assert still == image_file(hass, skyline['still_image']).read_bytes()
+    assert still != image_file(hass, skyline['image']).read_bytes()
+
+
+def image_file(hass, url):
+    return config(hass, 'www', 'moin_hamburg', url.split('?')[0].rsplit('/', 1)[-1])
+
+
+async def test_diagnostics(hass, fakes, freezer, hass_client, hass_admin_user):
+    """Enough to understand a bug report; no names, no secret, no image URLs."""
+    from pytest_homeassistant_custom_component.components.diagnostics import get_diagnostics_for_config_entry
+    from homeassistant.setup import async_setup_component
+    assert await async_setup_component(hass, 'http', {})
+    fakes.calendars['calendar.events'] = [(local('2026-12-24 00:00'), local('2026-12-25 00:00'), 'Geburtstag Kim'),
+                                          (local('2026-12-24 00:00'), local('2026-12-25 00:00'), 'Zahnarzt')]
+    hass.states.async_set('sensor.st_pauli_water_level', '420', {'unit_of_measurement': 'cm'})
+    entry = await start(hass, fakes, freezer, '2026-12-24 12:00', options={'water_level': 'sensor.st_pauli_water_level'})
+    assert await async_setup_component(hass, 'diagnostics', {})   # before the client freezes the routes
+    client = await fresh_client(hass, hass_client, hass_admin_user)
+
+    async def same_client():
+        return client
+    data = await get_diagnostics_for_config_entry(hass, same_client, entry)
+    assert data['state']['key'] == 'day-clear.winter.wind-calm.tide-1.event-birthday'
+    assert data['state']['name'] == '**REDACTED**' and data['state']['wish'] == '**REDACTED**'
+    assert data['inputs']['events'] == ['birthday', None] and data['inputs']['water_level'] == 420
+    assert data['memory']['tide'] == 1 and data['options']['water_level'] == 'sensor.st_pauli_water_level'
+    assert data['themes'] == {'loaded': True, 'default': 'default'} and data['version']
+    text = str(data)
+    secret = entry.runtime_data.files.secret
+    assert 'Kim' not in text and 'Zahnarzt' not in text and secret not in text and '/moin_hamburg/' not in text
+
+
 async def test_config_and_options_flow(hass, fakes, freezer):
     await hass.config.async_set_time_zone(TZ)
     freezer.move_to(local('2026-12-10 12:00'))

@@ -16,7 +16,8 @@ Parts, separated by dots:
     moon-<0..7>               moon phase in eighths, 0 = new, 4 = full
     tide-<0..4>               the Elbe from mean low (0) to mean high tide (4);
                               without it the water stands as at high tide
-    <extreme>                 heat, cold, snow-cover, fog, thunder, storm-surge
+    <extreme>                 heat, cold, snow-cover, fog, thunder, storm-surge,
+                              ice-drift
     warning-<kind>            hurricane, storm-surge, storm-gusts, thunder, heat,
                               frost, snow; balls on the signal mast for storms
     event-<day>               a special day, see layers.PLAYFUL_DAYS
@@ -33,7 +34,7 @@ from .palette import PALETTES, THEME_COLORS, TIDE_STEPS, rgba
 
 SEASONS = ('spring', 'summer', 'autumn', 'winter')
 WINDS = ('calm', 'windy', 'storm')
-EXTREMES = ('heat', 'cold', 'snow-cover', 'fog', 'thunder', 'storm-surge')
+EXTREMES = ('heat', 'cold', 'snow-cover', 'fog', 'thunder', 'storm-surge', 'ice-drift')
 KEY_PATTERN = re.compile(r'[a-z0-9.-]{3,200}')
 
 
@@ -74,7 +75,7 @@ def render(key, animated=True):
     s = parse_key(key)
     tod, weather = s['scene'].split('-')
     ctx = _layers.Context(tod, weather, s['season'], s['wind'], s['direction'], s['moon'], s['extremes'],
-                          s['warning'], s['day'], animated, key)
+                          s['warning'], s['day'], animated, key, tide=s['tide'])
     fragments = _layers.layers(ctx, PALETTES[s['scene']])
     return _scene.compose(s['scene'], animated, wind=s['wind'], direction=s['direction'], moon=s['moon'],
                           tide=s['tide'], css=_layers.LAYER_CSS, **fragments)

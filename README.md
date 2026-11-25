@@ -26,6 +26,7 @@ fireworks, Pride and a hot evening](https://dmichalski.github.io/moin-hamburg/sh
 | Moon phase | computed, as Home Assistant's moon sensor has it |
 | The tide: the Elbe falls and bares the quay wall | the gauge Hamburg St. Pauli, in five steps from mean low to mean high tide |
 | Heat, cold, fog, thunder, snow cover, storm surge | temperatures, forecast, warnings; snow cover after two hours of snow at 1 °C or less, gone after six hours above 3 °C; a storm surge also from the gauge, 1.5 m above mean high tide |
+| Ice drift: pack ice on the Elbe, ice along the quay | four days of frost without a reading above 0 °C; gone after two days without frost |
 | Storm balls on the signal mast | storm and hurricane warnings |
 | Special days | the date, your calendars, the bin collection |
 
@@ -116,6 +117,7 @@ random secret of your installation rather than from the state key -- see
 | Entity | |
 |---|---|
 | `sensor.moin_hamburg_skyline` | the state key, e.g. `night-cloudy.autumn.wind-calm.event-dom`; attributes for each part and the image URLs |
+| `image.moin_hamburg_skyline` | the picture itself, for picture cards: animated while the switch is on; behind the login |
 | `sensor.moin_hamburg_greeting` | "Good morning" ...; attribute `wish`, e.g. "Happy birthday, Kim!" |
 | `sensor.moin_hamburg_summary` | "12° · Rain until about 15:00, then dry" |
 | `sensor.moin_hamburg_special_day` | the special day drawn; attribute `all` lists every one of the moment |
@@ -123,6 +125,10 @@ random secret of your installation rather than from the state key -- see
 
 Texts follow the Home Assistant language: German or English. The entity IDs
 are the same in every language.
+
+For a bug report, attach the diagnostics (*Settings → Devices & services →
+Moin Hamburg → ⋮ → Download diagnostics*). They leave out calendar titles,
+names and the image URLs.
 
 A header for the dashboard:
 

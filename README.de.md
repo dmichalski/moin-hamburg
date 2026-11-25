@@ -26,6 +26,7 @@ Kirschblütenfest, CSD und ein heißer Abend](https://dmichalski.github.io/moin-
 | Mondphase | berechnet, so wie sie der Mond-Sensor von Home Assistant hat |
 | Die Tide: Die Elbe fällt und legt die Kaimauer frei | der Pegel Hamburg St. Pauli, in fünf Stufen vom mittleren Niedrig- bis zum mittleren Hochwasser |
 | Hitze, Kälte, Nebel, Gewitter, Schneedecke, Sturmflut | Temperaturen, Vorhersage, Warnungen; Schneedecke nach zwei Stunden Schnee bei 1 °C oder weniger, weg nach sechs Stunden über 3 °C; Sturmflut auch vom Pegel, ab 1,5 m über dem mittleren Hochwasser |
+| Eisgang: Packeis auf der Elbe, Eis an der Kaimauer | vier Tage Frost ohne einen Wert über 0 °C; weg nach zwei Tagen ohne Frost |
 | Sturmbälle am Signalmast | Sturm- und Orkanwarnungen |
 | Besondere Tage | das Datum, deine Kalender, die Müllabfuhr |
 
@@ -119,6 +120,7 @@ Installation statt aus dem Zustandsschlüssel -- siehe
 | Entität | |
 |---|---|
 | `sensor.moin_hamburg_skyline` | der Zustandsschlüssel, z. B. `night-cloudy.autumn.wind-calm.event-dom`; Attribute für jeden Teil und die Bild-URLs |
+| `image.moin_hamburg_skyline` | das Bild selbst, für Bildkarten: animiert, solange der Schalter an ist; nur angemeldet |
 | `sensor.moin_hamburg_greeting` | „Guten Morgen“ ...; Attribut `wish`, z. B. „Alles Gute, Kim!“ |
 | `sensor.moin_hamburg_summary` | „12° · Regen bis etwa 15 Uhr, danach trocken“ |
 | `sensor.moin_hamburg_special_day` | der gezeichnete besondere Tag; das Attribut `all` listet alle des Moments |
@@ -126,6 +128,10 @@ Installation statt aus dem Zustandsschlüssel -- siehe
 
 Die Texte folgen der Sprache von Home Assistant: deutsch oder englisch. Die
 Entitäts-IDs sind in jeder Sprache gleich.
+
+Für eine Fehlermeldung die Diagnose anhängen (*Einstellungen → Geräte &
+Dienste → Moin Hamburg → ⋮ → Diagnose herunterladen*). Kalendertitel, Namen
+und die Bild-URLs fehlen darin.
 
 Eine Kopfzeile fürs Dashboard:
 

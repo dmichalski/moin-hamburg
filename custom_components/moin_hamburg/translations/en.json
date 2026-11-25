@@ -105,6 +105,11 @@
     }
   },
   "entity": {
+    "image": {
+      "skyline": {
+        "name": "Skyline"
+      }
+    },
     "sensor": {
       "skyline": {
         "name": "Skyline"

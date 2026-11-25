@@ -36,8 +36,12 @@ SNOW_COVER_ON = (1, dt.timedelta(hours=2))   # snowing at or below 1 degree for 
 SNOW_COVER_OFF = (3, dt.timedelta(hours=6))  # above 3 degrees for six hours
 FIRST_SNOW = dt.timedelta(minutes=15)        # snowing for 15 minutes, October to April
 FIRST_SNOW_MONTHS = (10, 11, 12, 1, 2, 3, 4)
+# Ice drift on the Elbe: after four days of frost without a single reading above
+# 0 degrees the river carries pack ice; it goes once two days have passed without frost.
+ICE_DRIFT_ON = (0, dt.timedelta(days=4))
+ICE_DRIFT_OFF = dt.timedelta(days=2)
 # Updates come every 15 minutes or sooner. After a longer gap (Home Assistant
-# was down) nobody knows what the weather did: the snow clocks start again.
+# was down) nobody knows what the weather did: the snow and ice clocks start again.
 GAP = dt.timedelta(hours=1)
 
 # Weather warnings, by headline. The first kind that matches any warning in
@@ -172,6 +176,9 @@ class Memory:
     tide: int | None = None                   # the step drawn last
     surge: bool = False                       # storm surge at the gauge
     water_seen: dt.datetime | None = None     # last answer from the gauge
+    ice_drift: bool = False
+    freezing_since: dt.datetime | None = None  # at or below 0 degrees without a break
+    thawing_since: dt.datetime | None = None   # above 0 degrees without a break
 
     def to_dict(self):
         return {k: (v.isoformat() if isinstance(v, (dt.date, dt.datetime)) else v)
@@ -188,7 +195,7 @@ class Memory:
                     v = dt.date.fromisoformat(v) if v else None
                 elif f.name in DATETIMES:
                     v = dt.datetime.fromisoformat(v) if v else None
-                elif f.name in ('snow_cover', 'surge'):
+                elif f.name in ('snow_cover', 'surge', 'ice_drift'):
                     v = bool(v)
                 elif f.name == 'tide':
                     v = v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= TIDE_STEPS else None
@@ -201,7 +208,8 @@ class Memory:
         return cls(**out)
 
 
-DATETIMES = ('warning_seen', 'snowing_since', 'falling_since', 'mild_since', 'updated', 'water_seen')
+DATETIMES = ('warning_seen', 'snowing_since', 'falling_since', 'mild_since', 'updated', 'water_seen',
+             'freezing_since', 'thawing_since')
 
 
 @dataclass(frozen=True)
@@ -230,6 +238,7 @@ def update(inputs, memory=Memory(), settings=Settings()):
     """The state for this moment and the memory for the next update."""
     now, w = inputs.now, inputs.weather
     memory = _remember_snow(memory, now, w)
+    memory = _remember_ice(memory, now, w)
     memory = _remember_warning(memory, now, warning_kind(inputs.warnings))
     memory = _remember_water(memory, now, inputs.water_level)
     warning = memory.warning
@@ -264,6 +273,8 @@ def update(inputs, memory=Memory(), settings=Settings()):
         extremes.add('cold')
     if memory.snow_cover:
         extremes.add('snow-cover')
+    if memory.ice_drift:
+        extremes.add('ice-drift')
     if w.condition == 'fog' or (hours and hours[0].condition == 'fog'):
         extremes.add('fog')
     if any(c in THUNDER for c in upcoming) or warning == 'thunder':
@@ -310,7 +321,8 @@ def _known(values):
 
 def _remember_snow(m, now, w):
     if m.updated is None or not dt.timedelta(0) <= now - m.updated <= GAP:
-        m = dataclasses.replace(m, snowing_since=None, falling_since=None, mild_since=None)
+        m = dataclasses.replace(m, snowing_since=None, falling_since=None, mild_since=None, freezing_since=None,
+                                thawing_since=None)
     m = dataclasses.replace(m, updated=now)
     falling = w.condition in SNOWFALL
     t = w.temperature
@@ -345,6 +357,20 @@ def _remember_water(m, now, level):
         return dataclasses.replace(m, tide=None, surge=False, water_seen=None)
     surge = level >= STORM_SURGE or (m.surge and level >= STORM_SURGE_END)
     return dataclasses.replace(m, tide=tide_step(level, m.tide), surge=surge, water_seen=now)
+
+
+def _remember_ice(m, now, w):
+    t = w.temperature
+    if t is None:
+        return m
+    freezing = t <= ICE_DRIFT_ON[0]
+    m = dataclasses.replace(m, freezing_since=(m.freezing_since or now) if freezing else None,
+                            thawing_since=None if freezing else (m.thawing_since or now))
+    if m.freezing_since and now - m.freezing_since >= ICE_DRIFT_ON[1]:
+        m = dataclasses.replace(m, ice_drift=True)
+    if m.thawing_since and now - m.thawing_since >= ICE_DRIFT_OFF:
+        m = dataclasses.replace(m, ice_drift=False)
+    return m
 
 
 def warning_kind(headlines):

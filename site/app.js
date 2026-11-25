@@ -11,7 +11,7 @@ const LABELS = {
   wind: { calm: 'Calm', windy: 'Windy', storm: 'Storm' },
   direction: { west: 'West', east: 'East' },
   extremes: { heat: 'Heat', cold: 'Cold', 'snow-cover': 'Snow cover', fog: 'Fog', thunder: 'Thunder',
-    'storm-surge': 'Storm surge' },
+    'storm-surge': 'Storm surge', 'ice-drift': 'Ice drift' },
   warnings: { hurricane: 'Hurricane', 'storm-surge': 'Storm surge', 'storm-gusts': 'Storm gusts', thunder: 'Thunderstorm',
     heat: 'Heat', frost: 'Severe frost', snow: 'Snow' },
 };

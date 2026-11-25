@@ -174,6 +174,11 @@
   "still": "b8057d707ae5a72900ac7ee77bc5dbd33f2a9b4c76f76649126a615cae1769dd",
   "theme": "549cb0bbb8eeeb2542013eb78d17909d6893066e0d2945518171c1edc78441c1"
  },
+ "day-clear.winter.wind-windy.ice-drift": {
+  "animated": "c671e9f6e6892a63558b3ff92ced085104070b56d0d622d71e80c253f7e4afd1",
+  "still": "3b377f1b071851ad0747dfbff7ff592ea20c3e77bc20a3e55c14f5186f7183e5",
+  "theme": "2e1f65b894a50d5cf91f7960cff24d3150817c463a9f9ebe105497d9498ca8e6"
+ },
  "day-clear.winter.wind-windy.snow-cover": {
   "animated": "72c4e07a4b5c70311e307502780bc06c73f77d5a3386f598d89fe58935277b30",
   "still": "7aeae47ededa4f8e15bbca8b0a32eef1c24ff010bfeacc617645a67a73cf8746",
@@ -504,6 +509,11 @@
   "still": "f274def020b75222f1b3422108264ad7badd0a54520f8817fc635fbe55655d1c",
   "theme": "4f870086f0645721a7080520fc904665264520dd48340e97e8a776fd91fedd8e"
  },
+ "dusk-cloudy.winter.wind-windy.ice-drift": {
+  "animated": "90155570fc89c77b0e4752c7d43596ee67d116aa47ce1fb1ed61eac1a6baa1d1",
+  "still": "a7e4a44b53bc27b07c3ed4df9f11a908bea0717ab89f2e9bd07717b4ab24e60a",
+  "theme": "3fc64ce8b2b4823829ec332d290bdc898e1d5c340dd4b1b74ed202db0495dd1d"
+ },
  "dusk-cloudy.winter.wind-windy.moon-4": {
   "animated": "bd60a25a08a044d9b60724692b639d956b4fb86fa91f4f8cbbd1572aeb28edc7",
   "still": "df5aeed1a85d24ae957337746a7587f175b914cc34dae5a93ffa5a4f0b52c18c",
@@ -779,6 +789,11 @@
   "still": "833a6c3c932ed701ae9a047cf75e16c60959770db8db13c3d8959a0e6da70a75",
   "theme": "6896b7523697ad391b6eaa883ed04e2bd267fb91e6ad8c4a9e8053d25e481099"
  },
+ "night-clear.winter.wind-windy.ice-drift": {
+  "animated": "09e67c6ee344d49a2c06c2f9948df890445f7ea3fcb83630b08e3d48fdfed847",
+  "still": "d130fa2622997d78fca37102d8efa1462ee1b0d28563ac03e9e681c4a850659c",
+  "theme": "622483df40477d980494af13052d924b7408516446eaa17fe3411916c0ed9f49"
+ },
  "night-clear.winter.wind-windy.snow-cover": {
   "animated": "2c7ce5e3cc891046f4cf6d6b8fc4a1991ca090d59bda1cc40ced9a7e1fa61715",
   "still": "f3bc05f560bbd5856fd729830e262f79aacc831b47d5b7b58f276f163ea48bc4",
@@ -993,6 +1008,11 @@
   "animated": "877932d75cdd047fe27c773296f6b33c7df6308dd67202c2aba15ff22a58acd9",
   "still": "94041ea30c28357e460aace9566e447809c43769e750eeb8655632e5a82aa184",
   "theme": "d382922cfc24a71a68ed5e5a4209eee8a458009d802a5207c9a4c27ec7a7f35a"
+ },
+ "night-snow.winter.wind-calm.tide-1.cold.ice-drift.snow-cover": {
+  "animated": "306679089b807876fbac6933b2c7254ab0879eef164c7b6c3bd2d7aef6f18449",
+  "still": "06bcd14c66cf78781f4cc45245c4472203236a55ecab5f7c4598645b05c1585e",
+  "theme": "3dfb003f7815a6feb0bd3361f2e00515283e2c0c866b8b8d2d21aa9154c6967b"
  },
  "night-snow.winter.wind-storm-east": {
   "animated": "1d6d2f21b2e87b35e4be0628347a7b0a508a4b7ab10feb2ab7d73db1b1fd2bfa",

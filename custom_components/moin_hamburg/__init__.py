@@ -19,7 +19,7 @@ from .const import (
 from .coordinator import MoinHamburgCoordinator
 from .files import Files
 
-PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.IMAGE, Platform.SENSOR, Platform.SWITCH]
 
 type MoinHamburgConfigEntry = ConfigEntry[MoinHamburgCoordinator]
 

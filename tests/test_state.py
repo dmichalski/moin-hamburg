@@ -116,7 +116,8 @@ def test_every_key_draws():
     weathers = [{}, {'condition': 'cloudy', 'gust': 50, 'bearing': 90}, {'condition': 'rainy', 'coming': ['lightning'] * 12},
                 {'condition': 'snowy', 'gust': 90, 'temperature': -10, 'warnings': ['ORKAN', 'STURMFLUT'],
                  'memory': Memory(snow_cover=True)}, {'condition': 'fog', 'temperature': 33, 'warnings': ['SCHNEE']},
-                {'water': 300}, {'water': 560, 'condition': 'rainy'}, {'water': 950, 'gust': 80}]
+                {'water': 300}, {'water': 560, 'condition': 'rainy'}, {'water': 950, 'gust': 80},
+                {'temperature': -4, 'water': 400, 'memory': Memory(ice_drift=True, freezing_since=at('2025-12-28 00:00'))}]
     t, n, days = at('2026-01-01 00:00'), 0, set()
     while t.year == 2026:
         s, _ = run(t, elevation=(t.hour - 12) * 4, events=['Geburtstag Kim', 'Dom', 'Herbstferien'][n % 4:n % 4 + 1],
@@ -354,6 +355,40 @@ def test_snow_cover():
     assert not m.snow_cover
 
 
+def hourly_temperatures(start, temperatures, memory=Memory()):
+    """One update an hour, as the integration would make them (four a hour, but the clocks only need these)."""
+    t, s = at(start), None
+    for temperature in temperatures:
+        s, memory = run(t, condition='cloudy', temperature=temperature, memory=memory)
+        t += dt.timedelta(hours=1)
+    return s, memory
+
+
+def test_ice_drift_after_four_days_of_frost():
+    s, m = hourly_temperatures('2027-01-12 00:00', [-3] * 96)
+    assert 'ice-drift' not in s.extremes                                  # 95 hours
+    s, m = hourly_temperatures('2027-01-16 00:00', [-3], m)
+    assert 'ice-drift' in s.extremes and s.key == 'day-cloudy.winter.wind-calm.ice-drift'
+    s, m = hourly_temperatures('2027-01-12 00:00', [-3] * 50 + [0.5] + [-3] * 50)
+    assert 'ice-drift' not in s.extremes                                  # one mild hour starts it again
+
+
+def test_ice_drift_goes_two_days_after_the_frost():
+    _, m = hourly_temperatures('2027-01-12 00:00', [-5] * 97)
+    s, m = hourly_temperatures('2027-01-16 01:00', [4] * 30 + [-1] + [4] * 47, m)
+    assert 'ice-drift' in s.extremes                                      # a night frost on the way
+    s, m = hourly_temperatures('2027-01-19 07:00', [4], m)
+    assert 'ice-drift' in s.extremes
+    s, m = hourly_temperatures('2027-01-19 08:00', [4], m)                # two days after the night frost
+    assert 'ice-drift' not in s.extremes and not m.ice_drift
+
+
+def test_ice_clocks_start_again_after_a_gap():
+    _, m = hourly_temperatures('2027-01-12 00:00', [-3] * 60)
+    s, m = hourly_temperatures('2027-01-14 14:00', [-3] * 40, m)          # Home Assistant was down for two hours
+    assert 'ice-drift' not in s.extremes and m.freezing_since == at('2027-01-14 14:00')
+
+
 def test_first_snow():
     snowing = {'condition': 'snowy', 'temperature': 2}
     s, m = run('2026-11-10 07:00', **snowing)
@@ -382,6 +417,8 @@ def test_memory_round_trip():
     _, m = run('2027-01-12 03:00', water=900)
     assert m.tide == 4 and m.surge and Memory.from_dict(m.to_dict()) == m
     assert Memory.from_dict({'tide': 7}) == Memory() and Memory.from_dict({'tide': True}) == Memory()
+    _, m = hourly_temperatures('2027-01-12 00:00', [-3] * 97)
+    assert m.ice_drift and Memory.from_dict(m.to_dict()) == m
 
 
 # -- texts ---------------------------------------------------------------------------------------------

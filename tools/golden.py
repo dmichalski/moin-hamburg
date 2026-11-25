@@ -25,7 +25,7 @@ SCENES = [f'{t}-{w}' for t in ('day', 'dusk', 'night') for w in ('clear', 'cloud
 SEASONS = ('spring', 'summer', 'autumn', 'winter')
 WINDS = ('wind-calm', 'wind-windy', 'wind-windy-east', 'wind-storm', 'wind-storm-east')
 EXTREMES = {'heat': 'summer', 'cold': 'winter', 'snow-cover': 'winter', 'fog': 'autumn',
-            'thunder': 'summer', 'storm-surge': 'autumn'}
+            'thunder': 'summer', 'storm-surge': 'autumn', 'ice-drift': 'winter'}
 WARNINGS = ('storm-gusts', 'hurricane', 'storm-surge', 'thunder', 'heat', 'frost', 'snow')
 EVENTS = {'quiet': 'spring', 'new-years-eve': 'winter', 'new-years-day': 'winter', 'epiphany': 'winter',
           'valentines': 'winter', 'carnival': 'winter', 'clock-change': 'spring', 'easter': 'spring',
@@ -47,7 +47,8 @@ def cases():
     for t in range(5):
         out.append(f'{SCENES[t * 2 + 1]}.{SEASONS[t % 4]}.{WINDS[t]}.tide-{t}')
     out += ['night-clear.autumn.wind-calm.moon-4.tide-0', 'dusk-clear.summer.wind-calm.tide-1.event-harbour-birthday',
-            'day-snow.winter.wind-windy.tide-0.cold.snow-cover', 'night-rain.autumn.wind-storm.tide-4.storm-surge']
+            'day-snow.winter.wind-windy.tide-0.cold.snow-cover', 'night-rain.autumn.wind-storm.tide-4.storm-surge',
+            'night-snow.winter.wind-calm.tide-1.cold.ice-drift.snow-cover']
     for ex, season in EXTREMES.items():
         for scene in ('day-clear', 'night-clear', 'dusk-cloudy'):
             out.append(f'{scene}.{season}.wind-windy.{ex}')

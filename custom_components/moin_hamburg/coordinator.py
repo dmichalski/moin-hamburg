@@ -77,6 +77,7 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         self.files = Files(hass.config.path(*IMAGE_DIR), hass.config.path(*THEME_FILE))
         self.memory = state.Memory()
         self.animated = True
+        self.last_inputs: state.Inputs | None = None   # for the diagnostics
 
     @property
     def options(self) -> dict[str, Any]:
@@ -123,7 +124,8 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         bin_day = bool(await self._calendar_titles(self.options.get(CONF_BIN_CALENDARS, []), day, day + dt.timedelta(days=1)))
         inputs = state.Inputs(now, self._sun_elevation(), await self._weather(now), tuple(self._warnings()),
                               tuple(titles), bin_day, self._water_level())
-        result, memory = state.update(inputs, self.memory, self._settings())
+        self.last_inputs = inputs
+        result, memory = state.update(inputs, self.memory, self.settings())
         # The clocks of the last update and the last gauge reading move every time; neither needs saving at once.
         significant = (dataclasses.replace(memory, updated=None, water_seen=None)
                        != dataclasses.replace(self.memory, updated=None, water_seen=None))
@@ -141,7 +143,7 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
     def _stored(self) -> dict[str, Any]:
         return {'memory': self.memory.to_dict(), 'animated': self.animated, 'secret': self.files.secret}
 
-    def _settings(self) -> state.Settings:
+    def settings(self) -> state.Settings:
         keywords = dict(state.KEYWORDS)
         for day, text in (self.options.get(CONF_KEYWORDS) or {}).items():
             if day in keywords:

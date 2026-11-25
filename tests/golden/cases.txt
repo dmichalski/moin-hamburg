@@ -65,6 +65,7 @@ night-clear.autumn.wind-calm.moon-4.tide-0
 dusk-clear.summer.wind-calm.tide-1.event-harbour-birthday
 day-snow.winter.wind-windy.tide-0.cold.snow-cover
 night-rain.autumn.wind-storm.tide-4.storm-surge
+night-snow.winter.wind-calm.tide-1.cold.ice-drift.snow-cover
 day-clear.summer.wind-windy.heat
 night-clear.summer.wind-windy.heat
 dusk-cloudy.summer.wind-windy.heat
@@ -83,6 +84,9 @@ dusk-cloudy.summer.wind-windy.thunder
 day-clear.autumn.wind-windy.storm-surge
 night-clear.autumn.wind-windy.storm-surge
 dusk-cloudy.autumn.wind-windy.storm-surge
+day-clear.winter.wind-windy.ice-drift
+night-clear.winter.wind-windy.ice-drift
+dusk-cloudy.winter.wind-windy.ice-drift
 day-cloudy.autumn.wind-storm.warning-storm-gusts
 night-rain.autumn.wind-windy-east.warning-storm-gusts
 day-cloudy.autumn.wind-storm.warning-hurricane
