@@ -28,6 +28,5 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # The icon ships with the integration (custom_components/moin_hamburg/brand), which Home Assistant
-          # reads itself; there is no entry in home-assistant/brands.
-          ignore: brands
+          # No ignores: the default list of the Marketplace wants every check green. The brands check finds the
+          # icon in custom_components/moin_hamburg/brand.
