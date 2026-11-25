@@ -1,11 +1,13 @@
 """Moin Hamburg state: what the skyline shows right now.
 
 Pure Python, standard library only, no Home Assistant imports. The integration
-reads weather, sun, warnings and calendars from Home Assistant and passes them
-in as plain values; update() returns the state key for the renderer and the
-texts for the dashboard header, plus the memory to keep for the next update.
+reads weather, sun, warnings, calendars and the water level from Home Assistant
+and passes them in as plain values; update() returns the state key for the
+renderer and the texts for the dashboard header, plus the memory to keep for
+the next update.
 
-Units: temperatures in degrees Celsius, wind in km/h. Times are aware
+Units: temperatures in degrees Celsius, wind in km/h, water level in cm above
+the gauge zero at Hamburg St. Pauli. Times are aware
 datetimes; `now` carries the local time zone.
 """
 from __future__ import annotations
@@ -53,6 +55,19 @@ WARNINGS = (
 # issues the feed may be empty for up to 20 minutes. The picture keeps the last
 # warning until none has been seen for this long.
 WARNING_HOLD = dt.timedelta(minutes=30)
+
+# Water level at the gauge Hamburg St. Pauli (PEGELONLINE, station 5952050), in cm above its gauge
+# zero (NHN -5.004 m). Mean low and high tide of 2001-2010 as the gauge lists them. A storm surge, as the
+# BSH counts it, starts 1.5 m above mean high tide; it ends 10 cm below that, so the picture does not flicker.
+MEAN_LOW_TIDE, MEAN_HIGH_TIDE = 347, 711
+STORM_SURGE = MEAN_HIGH_TIDE + 150
+STORM_SURGE_END = STORM_SURGE - 10
+# The picture shows the tide in steps from mean low (0) to mean high tide (4). A new step needs the water
+# a little past the middle between two steps, so a level standing at the boundary keeps its picture.
+TIDE_STEPS = 4
+TIDE_MARGIN = .15  # of a step
+# A gauge that does not answer keeps its last picture for this long.
+WATER_HOLD = dt.timedelta(hours=1)
 
 # Special days, most important first. Only one is drawn: a quiet day (Good
 # Friday, the days of remembrance in November) wins over everything and keeps
@@ -133,6 +148,7 @@ class Inputs:
     warnings: tuple[str, ...] = ()     # headlines of the weather warnings in force
     events: tuple[str, ...] = ()       # titles of the calendar events going on now
     bin_day: bool = False              # a collection is due today
+    water_level: float | None = None   # cm above gauge zero at Hamburg St. Pauli; None: no gauge or no answer
 
 
 @dataclass(frozen=True)
@@ -153,6 +169,9 @@ class Memory:
     falling_since: dt.datetime | None = None  # snowing at any temperature
     mild_since: dt.datetime | None = None     # above 3 degrees
     updated: dt.datetime | None = None
+    tide: int | None = None                   # the step drawn last
+    surge: bool = False                       # storm surge at the gauge
+    water_seen: dt.datetime | None = None     # last answer from the gauge
 
     def to_dict(self):
         return {k: (v.isoformat() if isinstance(v, (dt.date, dt.datetime)) else v)
@@ -169,8 +188,10 @@ class Memory:
                     v = dt.date.fromisoformat(v) if v else None
                 elif f.name in DATETIMES:
                     v = dt.datetime.fromisoformat(v) if v else None
-                elif f.name == 'snow_cover':
+                elif f.name in ('snow_cover', 'surge'):
                     v = bool(v)
+                elif f.name == 'tide':
+                    v = v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= TIDE_STEPS else None
                 elif f.name == 'warning':
                     v = v if v in dict(WARNINGS) else 'none'
             except (TypeError, ValueError):
@@ -180,7 +201,7 @@ class Memory:
         return cls(**out)
 
 
-DATETIMES = ('warning_seen', 'snowing_since', 'falling_since', 'mild_since', 'updated')
+DATETIMES = ('warning_seen', 'snowing_since', 'falling_since', 'mild_since', 'updated', 'water_seen')
 
 
 @dataclass(frozen=True)
@@ -195,6 +216,7 @@ class State:
     gust: int
     moon: int             # 0 new, 4 full
     extremes: tuple
+    tide: int | None      # 0 (mean low) .. 4 (mean high tide), None without a gauge
     warning: str
     event: str            # the special day drawn, or 'none'
     events: tuple         # all special days of the moment, most important first
@@ -209,6 +231,7 @@ def update(inputs, memory=Memory(), settings=Settings()):
     now, w = inputs.now, inputs.weather
     memory = _remember_snow(memory, now, w)
     memory = _remember_warning(memory, now, warning_kind(inputs.warnings))
+    memory = _remember_water(memory, now, inputs.water_level)
     warning = memory.warning
     hours = w.hours[:12]
     upcoming = [w.condition] + [h.condition for h in hours[:3]]
@@ -245,7 +268,7 @@ def update(inputs, memory=Memory(), settings=Settings()):
         extremes.add('fog')
     if any(c in THUNDER for c in upcoming) or warning == 'thunder':
         extremes.add('thunder')
-    if warning == 'storm-surge':
+    if warning == 'storm-surge' or memory.surge:
         extremes.add('storm-surge')
 
     season = season_of(now.month)
@@ -258,6 +281,8 @@ def update(inputs, memory=Memory(), settings=Settings()):
     parts = [f'{tod}-{weather}', season, f'wind-{wind}' + ('' if wind == 'calm' else f'-{direction}')]
     if tod == 'night' and weather == 'clear':
         parts.append(f'moon-{moon}')
+    if memory.tide is not None:
+        parts.append(f'tide-{memory.tide}')
     parts += sorted(extremes)
     if warning != 'none':
         parts.append(f'warning-{warning}')
@@ -274,7 +299,7 @@ def update(inputs, memory=Memory(), settings=Settings()):
                                                  'christmas', 'first-snow') else ''
     state = State(key='.'.join(parts), scene=f'{tod}-{weather}', time_of_day=tod, weather=weather, season=season,
                   wind=wind, direction=direction, gust=gust, moon=moon, extremes=tuple(sorted(extremes)),
-                  warning=warning, event=event, events=events, name=name, greeting=greeting, wish=wish,
+                  tide=memory.tide, warning=warning, event=event, events=events, name=name, greeting=greeting, wish=wish,
                   summary=_summary(text, now, w, hours, weather, tod))
     return state, memory
 
@@ -303,6 +328,23 @@ def _remember_snow(m, now, w):
         if m.first_snow is None or m.first_snow < winter:
             m = dataclasses.replace(m, first_snow=now.date())
     return m
+
+
+def tide_step(level, last=None):
+    """The tide step for a water level; keeps the last step while the level is near its edge."""
+    x = min(TIDE_STEPS, max(0, (level - MEAN_LOW_TIDE) / (MEAN_HIGH_TIDE - MEAN_LOW_TIDE) * TIDE_STEPS))
+    if last is not None and abs(x - last) < .5 + TIDE_MARGIN:
+        return last
+    return math.floor(x + .5)
+
+
+def _remember_water(m, now, level):
+    if level is None:
+        if m.water_seen and dt.timedelta(0) <= now - m.water_seen < WATER_HOLD:
+            return m
+        return dataclasses.replace(m, tide=None, surge=False, water_seen=None)
+    surge = level >= STORM_SURGE or (m.surge and level >= STORM_SURGE_END)
+    return dataclasses.replace(m, tide=tide_step(level, m.tide), surge=surge, water_seen=now)
 
 
 def warning_kind(headlines):

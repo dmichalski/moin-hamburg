@@ -24,7 +24,8 @@ fireworks, Pride and a hot evening](https://dmichalski.github.io/moin-hamburg/sh
 | Calm, windy, storm; wind from east or west | gusts now and in the next three hours (40 and 75 km/h) |
 | Spring, summer, autumn, winter | the month |
 | Moon phase | computed, as Home Assistant's moon sensor has it |
-| Heat, cold, fog, thunder, snow cover, storm surge | temperatures, forecast, warnings; snow cover after two hours of snow at 1 °C or less, gone after six hours above 3 °C |
+| The tide: the Elbe falls and bares the quay wall | the gauge Hamburg St. Pauli, in five steps from mean low to mean high tide |
+| Heat, cold, fog, thunder, snow cover, storm surge | temperatures, forecast, warnings; snow cover after two hours of snow at 1 °C or less, gone after six hours above 3 °C; a storm surge also from the gauge, 1.5 m above mean high tide |
 | Storm balls on the signal mast | storm and hurricane warnings |
 | Special days | the date, your calendars, the bin collection |
 
@@ -77,9 +78,15 @@ If it doesn't, the integration raises a repair issue that says so.
 | Weather warnings | optional; NINA warning binary sensors or their headline sensors, or DWD warning level sensors |
 | Calendars with Hamburg events, birthdays and school holidays | optional; events count by title |
 | Bin collection calendars | optional; any event on a day means collection day |
+| Water level at Hamburg St. Pauli | optional; the water level sensor of the gauge "HAMBURG ST. PAULI" |
 | Make Moin Hamburg the default theme | for all users and devices; otherwise choose the theme in your profile |
 
 The options add the calendar keywords and the special days to leave out.
+
+For the tide, first add the *PEGELONLINE* integration, which comes with Home
+Assistant, and pick the station "HAMBURG ST. PAULI". Moin Hamburg reads its
+water level every quarter of an hour. Other gauges are refused: the tide marks
+are those of St. Pauli. Without the gauge the Elbe stands as at high tide.
 
 ### Calendar keywords
 

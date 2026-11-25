@@ -4,13 +4,14 @@ compose() draws the scene for one palette and takes the layers as ready-made
 SVG fragments at fixed slots: behind the city, inside the city (these are
 mirrored in the water), on the Elbphilharmonie glass, on the ferry and over
 everything. Wind speeds up clouds, rain and snow and slants them; the moon
-shows its phase.
+shows its phase. Below high tide the Elbe sinks and bares the quay wall; the
+mirror image, the glitter and the ferry go down with it.
 """
 import math
 import random
 
 from . import city as c
-from .palette import BASE, H, OX, PALETTES, SKY_TOP, W
+from .palette import BASE, H, OX, PALETTES, SKY_TOP, TIDE_DROP, TIDE_STEPS, W
 
 MOON_COLOR = '#f3efd9'
 
@@ -32,10 +33,23 @@ def moon_path(cx, cy, r, p):
             f'A{num(rx)} {r} 0 0 {inner} {cx} {cy - r} Z')
 
 
-def compose(name, animated, wind='calm', direction=1, moon=None, css='', defs='', behind_city='',
+def quay_wall(p, drop):
+    """The quay wall the falling tide bares: dark like the city, wet and green towards the water."""
+    sc, sop = p['shimmer']
+    top, bottom = BASE, BASE + drop
+    return (f'<linearGradient id="tide-wet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f5c3a" stop-opacity="0"/>'
+            f'<stop offset="1" stop-color="#3f5c3a" stop-opacity=".45"/></linearGradient>'
+            f'<rect y="{top}" width="{W}" height="{drop}" fill="{p["near"]}"/>'
+            f'<rect y="{top}" width="{W}" height="{drop}" fill="url(#tide-wet)"/>'
+            f'<rect y="{bottom - 1}" width="{W}" height="1" fill="{sc}" fill-opacity="{num(sop * .45)}"/>')
+
+
+def compose(name, animated, wind='calm', direction=1, moon=None, tide=None, css='', defs='', behind_city='',
             city_back='', city_front='', glass='', heat_shimmer=False, ferry='', rock=False, overlay=''):
-    """The whole scene as SVG text. moon: 0..7 (eight phases) or None."""
+    """The whole scene as SVG text. moon: 0..7 (eight phases) or None; tide: 0..4 (low to high) or None."""
     p = PALETTES[name]
+    drop = (TIDE_STEPS - tide) * TIDE_DROP if tide is not None else 0
+    water = BASE + drop
     rng = random.Random(name)
     speed = {'calm': 1, 'windy': 3, 'storm': 7}[wind]
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice">']
@@ -45,7 +59,7 @@ def compose(name, animated, wind='calm', direction=1, moon=None, css='', defs=''
     out.append('<defs>' + c.gradient('sky', p['sky']) + c.gradient('water', p['water']) +
                f'<pattern id="quay" width="7" height="8" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="2.4" height="3.4" fill="{wc}"/></pattern>'
                '<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.34"/><stop offset="0.75" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-               f'<mask id="refl"><rect x="0" y="{BASE}" width="{W}" height="190" fill="url(#fade)"/></mask>'
+               f'<mask id="refl"><rect x="0" y="{water}" width="{W}" height="190" fill="url(#fade)"/></mask>'
                '<filter id="blur" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="1.3"/></filter>'
                '<radialGradient id="sun"><stop offset="0" stop-color="#fffbe8"/><stop offset=".55" stop-color="#ffe590"/><stop offset="1" stop-color="#ffd262"/></radialGradient>'
                '<radialGradient id="sunglow"><stop offset="0" stop-color="#ffde82" stop-opacity=".6"/><stop offset="1" stop-color="#ffde82" stop-opacity="0"/></radialGradient>'
@@ -107,11 +121,13 @@ def compose(name, animated, wind='calm', direction=1, moon=None, css='', defs=''
     filt = ' filter="url(#fx-heat)"' if heat_shimmer and animated else ''
     out.append(f'<g transform="translate(0 {SKY_TOP})"{filt}>{town}</g>')
     out.append(f'<rect y="{BASE}" width="{W}" height="{H-BASE}" fill="url(#water)"/>')
-    out.append(f'<g mask="url(#refl)" filter="url(#blur)"><use href="#city" transform="translate(0 {BASE*2 - SKY_TOP}) scale(1 -1)"/></g>')
+    out.append(f'<g mask="url(#refl)" filter="url(#blur)"><use href="#city" transform="translate(0 {water*2 - SKY_TOP}) scale(1 -1)"/></g>')
     sc, sop = p['shimmer']
+    if drop:
+        out.append(quay_wall(p, drop))
     g = []
     for _ in range(70):
-        x, y, w = rng.uniform(0, W), rng.uniform(BASE + 8, BASE + 200), rng.uniform(10, 40)
+        x, y, w = rng.uniform(0, W), rng.uniform(BASE + 8, BASE + 200) + drop, rng.uniform(10, 40)
         st = (f' class="shimmer" style="animation-duration:{rng.uniform(3, 6):.1f}s;animation-delay:-{rng.uniform(0, 4):.1f}s"'
               if animated else f' opacity="{rng.uniform(.15, .6):.2f}"')
         g.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="1.5" rx=".75" fill="{sc}" fill-opacity="{sop}"{st}/>')
@@ -122,9 +138,9 @@ def compose(name, animated, wind='calm', direction=1, moon=None, css='', defs=''
     if rock and animated:
         hull = f'<g class="fx-rock">{hull}</g>'
     if animated:
-        out.append(f'<g class="ship"><g transform="translate(0 {BASE+4})">{hull}</g></g>')
+        out.append(f'<g class="ship"><g transform="translate(0 {water+4})">{hull}</g></g>')
     else:
-        out.append(f'<g transform="translate({OX+40} {BASE+4})">{hull}</g>')
+        out.append(f'<g transform="translate({OX+40} {water+4})">{hull}</g>')
     angle = -direction * {'calm': 9, 'windy': 22, 'storm': 36}[wind]
     if p.get('rain'):
         g = []

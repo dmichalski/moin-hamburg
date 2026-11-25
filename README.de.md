@@ -24,7 +24,8 @@ Kirschblütenfest, CSD und ein heißer Abend](https://dmichalski.github.io/moin-
 | Ruhig, windig, Sturm; Wind aus Ost oder West | Böen jetzt und in den nächsten drei Stunden (40 und 75 km/h) |
 | Frühling, Sommer, Herbst, Winter | der Monat |
 | Mondphase | berechnet, so wie sie der Mond-Sensor von Home Assistant hat |
-| Hitze, Kälte, Nebel, Gewitter, Schneedecke, Sturmflut | Temperaturen, Vorhersage, Warnungen; Schneedecke nach zwei Stunden Schnee bei 1 °C oder weniger, weg nach sechs Stunden über 3 °C |
+| Die Tide: Die Elbe fällt und legt die Kaimauer frei | der Pegel Hamburg St. Pauli, in fünf Stufen vom mittleren Niedrig- bis zum mittleren Hochwasser |
+| Hitze, Kälte, Nebel, Gewitter, Schneedecke, Sturmflut | Temperaturen, Vorhersage, Warnungen; Schneedecke nach zwei Stunden Schnee bei 1 °C oder weniger, weg nach sechs Stunden über 3 °C; Sturmflut auch vom Pegel, ab 1,5 m über dem mittleren Hochwasser |
 | Sturmbälle am Signalmast | Sturm- und Orkanwarnungen |
 | Besondere Tage | das Datum, deine Kalender, die Müllabfuhr |
 
@@ -77,10 +78,17 @@ Fehlt das, meldet die Integration es als Reparaturhinweis.
 | Wetterwarnungen | optional; die Warn-Binärsensoren von NINA oder ihre Schlagzeilen-Sensoren, oder die DWD-Warnstufen-Sensoren |
 | Kalender mit Hamburger Terminen, Geburtstagen und Ferien | optional; Termine zählen über ihren Titel |
 | Kalender der Müllabfuhr | optional; ein Termin an einem Tag heißt Abholung |
+| Wasserstand Hamburg St. Pauli | optional; der Wasserstands-Sensor des Pegels „HAMBURG ST. PAULI“ |
 | Moin Hamburg als Standard-Theme setzen | für alle Benutzer und Geräte; sonst das Theme im Profil wählen |
 
 In den Optionen kommen die Kalender-Stichworte und die besonderen Tage dazu,
 die wegbleiben sollen.
+
+Für die Tide zuerst die Integration *PEGELONLINE* hinzufügen, die Home
+Assistant mitbringt, und die Station „HAMBURG ST. PAULI“ wählen. Moin Hamburg
+liest ihren Wasserstand jede Viertelstunde. Andere Pegel lehnt der Dialog ab:
+Die Tidemarken sind die von St. Pauli. Ohne Pegel steht die Elbe wie bei
+Hochwasser.
 
 ### Kalender-Stichworte
 

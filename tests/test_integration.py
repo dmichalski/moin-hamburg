@@ -236,6 +236,53 @@ async def test_image_names_survive_a_restart(hass, fakes, freezer):
     assert hass.states.get(SKYLINE).attributes['image'] == image
 
 
+async def test_water_level_from_the_gauge(hass, fakes, freezer):
+    """The gauge Hamburg St. Pauli: the tide in the key, a storm surge above 861 cm, metres converted."""
+    hass.states.async_set('sensor.st_pauli_water_level', '420', {'unit_of_measurement': 'cm'})
+    entry = await start(hass, fakes, freezer, '2027-01-12 12:00', options={'water_level': 'sensor.st_pauli_water_level'})
+    s = hass.states.get(SKYLINE)
+    assert s.state == 'day-clear.winter.wind-calm.tide-1' and s.attributes['tide'] == 1
+    hass.states.async_set('sensor.st_pauli_water_level', '8.7', {'unit_of_measurement': 'm'})
+    freezer.move_to(local('2027-01-12 12:15:10'))   # read at the next quarter hour, not on its own change
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    freezer.tick(dt.timedelta(seconds=15))  # past the debounce
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    s = hass.states.get(SKYLINE)
+    assert s.state == 'day-clear.winter.wind-calm.tide-4.storm-surge' and s.attributes['extremes'] == ['storm-surge']
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_only_the_st_pauli_gauge(hass, fakes, freezer):
+    """Another PEGELONLINE gauge is refused; a sensor of another kind is taken as it is."""
+    await hass.config.async_set_time_zone(TZ)
+    freezer.move_to(local('2027-01-12 12:00'))
+    hass.states.async_set('weather.home', 'sunny', {'temperature': 4})
+    fakes.forecast = hourly(local('2027-01-12 12:00'), ['sunny'] * 12)
+    registry = er.async_get(hass)
+    cuxhaven = registry.async_get_or_create('sensor', 'pegel_online', 'cuxhaven-uuid_water_level').entity_id
+    pauli = registry.async_get_or_create(
+        'sensor', 'pegel_online', 'd488c5cc-4de9-4631-8ce1-0db0e700b546_water_level').entity_id
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={'source': 'user'})
+    result = await hass.config_entries.flow.async_configure(
+        result['flow_id'], {'weather': 'weather.home', 'water_level': cuxhaven})
+    assert result['type'] is FlowResultType.FORM and result['errors'] == {'water_level': 'not_st_pauli'}
+    result = await hass.config_entries.flow.async_configure(
+        result['flow_id'], {'weather': 'weather.home', 'water_level': pauli})
+    assert result['type'] is FlowResultType.CREATE_ENTRY and result['result'].options['water_level'] == pauli
+    entry = result['result']
+    await hass.async_block_till_done()
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result['flow_id'], {'weather': 'weather.home', 'water_level': cuxhaven, 'keywords': {}})
+    assert result['errors'] == {'water_level': 'not_st_pauli'}
+    result = await hass.config_entries.options.async_configure(
+        result['flow_id'], {'weather': 'weather.home', 'keywords': {}})
+    assert result['type'] is FlowResultType.CREATE_ENTRY and 'water_level' not in entry.options
+    await hass.async_block_till_done()
+
+
 async def test_config_and_options_flow(hass, fakes, freezer):
     await hass.config.async_set_time_zone(TZ)
     freezer.move_to(local('2026-12-10 12:00'))

@@ -9,6 +9,7 @@
           "warnings": "Wetterwarnungen",
           "event_calendars": "Kalender mit Hamburger Terminen, Geburtstagen und Ferien",
           "bin_calendars": "Kalender der Müllabfuhr",
+          "water_level": "Wasserstand Hamburg St. Pauli",
           "default_theme": "Moin Hamburg als Standard-Theme setzen"
         },
         "data_description": {
@@ -16,9 +17,13 @@
           "warnings": "NINA-Warnungen (die Warn-Binärsensoren oder ihre Schlagzeilen-Sensoren) oder die DWD-Warnstufen-Sensoren. Sturm, Sturmflut, Gewitter, Hitze, strenger Frost und Schnee erscheinen im Bild.",
           "event_calendars": "Termine zählen über ihren Titel, etwa „Dom“, „Hafengeburtstag“, „Geburtstag Kim“ oder „Herbstferien“. Die Stichworte lassen sich in den Optionen ändern. Feiertage brauchen keinen Kalender.",
           "bin_calendars": "Ein Termin an einem Tag heißt Abholung: Das Müllauto fährt von 6 bis 10 Uhr durchs Bild.",
+          "water_level": "Der PEGELONLINE-Pegel „HAMBURG ST. PAULI“ (eine Integration von Home Assistant). Die Elbe im Bild steigt und fällt mit der Tide und läuft ab 1,5 m über dem mittleren Hochwasser als Sturmflut über die Kaimauer.",
           "default_theme": "Für alle Benutzer und Geräte. Sonst im Profil „moin-hamburg“ oder „moin-hamburg-still“ wählen."
         }
       }
+    },
+    "error": {
+      "not_st_pauli": "Das ist nicht der Pegel Hamburg St. Pauli. Nur zu dem passen die Tidemarken."
     },
     "abort": {
       "single_instance_allowed": "Moin Hamburg ist schon eingerichtet."
@@ -33,6 +38,7 @@
           "warnings": "Wetterwarnungen",
           "event_calendars": "Kalender mit Hamburger Terminen, Geburtstagen und Ferien",
           "bin_calendars": "Kalender der Müllabfuhr",
+          "water_level": "Wasserstand Hamburg St. Pauli",
           "default_theme": "Moin Hamburg als Standard-Theme setzen",
           "disabled_days": "Besondere Tage, die wegbleiben"
         },
@@ -41,6 +47,7 @@
           "warnings": "NINA-Warnungen (die Warn-Binärsensoren oder ihre Schlagzeilen-Sensoren) oder die DWD-Warnstufen-Sensoren. Sturm, Sturmflut, Gewitter, Hitze, strenger Frost und Schnee erscheinen im Bild.",
           "event_calendars": "Termine zählen über ihren Titel, etwa „Dom“, „Hafengeburtstag“, „Geburtstag Kim“ oder „Herbstferien“. Die Stichworte lassen sich in den Optionen ändern. Feiertage brauchen keinen Kalender.",
           "bin_calendars": "Ein Termin an einem Tag heißt Abholung: Das Müllauto fährt von 6 bis 10 Uhr durchs Bild.",
+          "water_level": "Der PEGELONLINE-Pegel „HAMBURG ST. PAULI“ (eine Integration von Home Assistant). Die Elbe im Bild steigt und fällt mit der Tide und läuft ab 1,5 m über dem mittleren Hochwasser als Sturmflut über die Kaimauer.",
           "default_theme": "Für alle Benutzer und Geräte. Sonst im Profil „moin-hamburg“ oder „moin-hamburg-still“ wählen.",
           "disabled_days": "Diese Tage werden nie gezeichnet."
         },
@@ -60,6 +67,9 @@
           }
         }
       }
+    },
+    "error": {
+      "not_st_pauli": "Das ist nicht der Pegel Hamburg St. Pauli. Nur zu dem passen die Tidemarken."
     }
   },
   "selector": {

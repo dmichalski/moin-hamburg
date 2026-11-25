@@ -8,6 +8,8 @@ W, H = 1200, 844
 OX = 405           # left edge of the phone band
 BASE = 330         # waterline (bottom edge of the skyline)
 SKY_TOP = 140      # top edge of the skyline group
+TIDE_STEPS = 4     # tide-0 (mean low tide) .. tide-4 (mean high tide)
+TIDE_DROP = 4      # px the Elbe sinks per step below high tide, baring the quay wall
 
 # sky: gradient stops; far/near: silhouettes; glass: Elbphilharmonie glass;
 # win/win_op: window light; quay_op: Kaispeicher windows; red_op: aircraft warning

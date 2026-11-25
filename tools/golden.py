@@ -5,7 +5,8 @@
     golden.py hashes   write tests/golden/hashes.json from the current renderer
 
 The cases cover every scene, season, wind level and direction, moon phase,
-extreme, warning and special day at least once, by day, at dusk and at night.
+tide step, extreme, warning and special day at least once, by day, at dusk and
+at night.
 
 Regenerate the hashes only for an intended visual change, and look at the
 pictures before committing them (tools/gallery.py).
@@ -43,6 +44,10 @@ def cases():
     for m in range(8):
         out.append(f'night-clear.autumn.wind-calm.moon-{m}')
     out += ['dusk-cloudy.winter.wind-windy.moon-4', 'night-rain.spring.wind-storm-east.moon-2']
+    for t in range(5):
+        out.append(f'{SCENES[t * 2 + 1]}.{SEASONS[t % 4]}.{WINDS[t]}.tide-{t}')
+    out += ['night-clear.autumn.wind-calm.moon-4.tide-0', 'dusk-clear.summer.wind-calm.tide-1.event-harbour-birthday',
+            'day-snow.winter.wind-windy.tide-0.cold.snow-cover', 'night-rain.autumn.wind-storm.tide-4.storm-surge']
     for ex, season in EXTREMES.items():
         for scene in ('day-clear', 'night-clear', 'dusk-cloudy'):
             out.append(f'{scene}.{season}.wind-windy.{ex}')

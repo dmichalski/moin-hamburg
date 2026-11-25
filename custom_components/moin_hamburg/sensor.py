@@ -27,6 +27,7 @@ def _skyline(d: Snapshot) -> dict[str, Any]:
     s = d.state
     return {'scene': s.scene, 'time_of_day': s.time_of_day, 'weather': s.weather, 'season': s.season,
             'wind': s.wind, 'wind_direction': s.direction, 'gust': s.gust, 'moon_phase': s.moon,
+            'tide': s.tide,
             'extremes': list(s.extremes), 'warning': s.warning, 'special_day': s.event,
             'image': d.image, 'still_image': d.still}
 

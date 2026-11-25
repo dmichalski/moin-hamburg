@@ -14,6 +14,8 @@ Parts, separated by dots:
     <season>                  spring, summer, autumn, winter
     wind-<level>[-<from>]     calm, windy, storm; east or west (default west)
     moon-<0..7>               moon phase in eighths, 0 = new, 4 = full
+    tide-<0..4>               the Elbe from mean low (0) to mean high tide (4);
+                              without it the water stands as at high tide
     <extreme>                 heat, cold, snow-cover, fog, thunder, storm-surge
     warning-<kind>            hurricane, storm-surge, storm-gusts, thunder, heat,
                               frost, snow; balls on the signal mast for storms
@@ -27,7 +29,7 @@ import re
 
 from . import layers as _layers
 from . import scene as _scene
-from .palette import PALETTES, THEME_COLORS, rgba
+from .palette import PALETTES, THEME_COLORS, TIDE_STEPS, rgba
 
 SEASONS = ('spring', 'summer', 'autumn', 'winter')
 WINDS = ('calm', 'windy', 'storm')
@@ -50,10 +52,12 @@ def parse_key(key):
     if w[0] != 'wind' or len(w) not in (2, 3) or w[1] not in WINDS or (len(w) == 3 and w[2] not in ('east', 'west')):
         raise InvalidKey('invalid wind part')
     state = {'scene': parts[0], 'season': parts[1], 'wind': w[1], 'direction': -1 if len(w) == 3 and w[2] == 'east' else 1,
-             'moon': None, 'extremes': [], 'warning': 'none', 'day': 'none'}
+             'moon': None, 'tide': None, 'extremes': [], 'warning': 'none', 'day': 'none'}
     for p in parts[3:]:
         if p.startswith('moon-') and p[5:].isdigit() and int(p[5:]) < 8:
             state['moon'] = int(p[5:])
+        elif p.startswith('tide-') and p[5:].isdigit() and int(p[5:]) <= TIDE_STEPS:
+            state['tide'] = int(p[5:])
         elif p in EXTREMES:
             state['extremes'].append(p)
         elif p.startswith('warning-') and len(p) > 8:
@@ -73,7 +77,7 @@ def render(key, animated=True):
                           s['warning'], s['day'], animated, key)
     fragments = _layers.layers(ctx, PALETTES[s['scene']])
     return _scene.compose(s['scene'], animated, wind=s['wind'], direction=s['direction'], moon=s['moon'],
-                          css=_layers.LAYER_CSS, **fragments)
+                          tide=s['tide'], css=_layers.LAYER_CSS, **fragments)
 
 
 def moving_parts(svg):

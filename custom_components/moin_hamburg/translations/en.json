@@ -9,6 +9,7 @@
           "warnings": "Weather warnings",
           "event_calendars": "Calendars with Hamburg events, birthdays and school holidays",
           "bin_calendars": "Bin collection calendars",
+          "water_level": "Water level at Hamburg St. Pauli",
           "default_theme": "Make Moin Hamburg the default theme"
         },
         "data_description": {
@@ -16,9 +17,13 @@
           "warnings": "NINA warnings (the warning binary sensors or their headline sensors) or the DWD warning level sensors. Storms, storm surges, thunder, heat, severe frost and snow show in the picture.",
           "event_calendars": "Events count by their title, for example “Dom”, “Hafengeburtstag”, “Geburtstag Kim” or “Herbstferien”. The keywords can be changed in the options. Holidays need no calendar.",
           "bin_calendars": "Any event on a day means a collection: the bin lorry drives through the picture from 6 to 10 in the morning.",
+          "water_level": "The PEGELONLINE gauge “HAMBURG ST. PAULI” (a Home Assistant integration). The Elbe in the picture rises and falls with the tide, and from 1.5 m above mean high tide it floods the quay as a storm surge.",
           "default_theme": "For all users and devices. Without it, pick “moin-hamburg” or “moin-hamburg-still” in your profile."
         }
       }
+    },
+    "error": {
+      "not_st_pauli": "This is not the gauge Hamburg St. Pauli. The tide marks only fit that one."
     },
     "abort": {
       "single_instance_allowed": "Moin Hamburg is already set up."
@@ -33,6 +38,7 @@
           "warnings": "Weather warnings",
           "event_calendars": "Calendars with Hamburg events, birthdays and school holidays",
           "bin_calendars": "Bin collection calendars",
+          "water_level": "Water level at Hamburg St. Pauli",
           "default_theme": "Make Moin Hamburg the default theme",
           "disabled_days": "Special days to leave out"
         },
@@ -41,6 +47,7 @@
           "warnings": "NINA warnings (the warning binary sensors or their headline sensors) or the DWD warning level sensors. Storms, storm surges, thunder, heat, severe frost and snow show in the picture.",
           "event_calendars": "Events count by their title, for example “Dom”, “Hafengeburtstag”, “Geburtstag Kim” or “Herbstferien”. The keywords can be changed in the options. Holidays need no calendar.",
           "bin_calendars": "Any event on a day means a collection: the bin lorry drives through the picture from 6 to 10 in the morning.",
+          "water_level": "The PEGELONLINE gauge “HAMBURG ST. PAULI” (a Home Assistant integration). The Elbe in the picture rises and falls with the tide, and from 1.5 m above mean high tide it floods the quay as a storm surge.",
           "default_theme": "For all users and devices. Without it, pick “moin-hamburg” or “moin-hamburg-still” in your profile.",
           "disabled_days": "These days are never drawn."
         },
@@ -60,6 +67,9 @@
           }
         }
       }
+    },
+    "error": {
+      "not_st_pauli": "This is not the gauge Hamburg St. Pauli. The tide marks only fit that one."
     }
   },
   "selector": {

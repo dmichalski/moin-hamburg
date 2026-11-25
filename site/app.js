@@ -3,6 +3,7 @@
 
 const MOON = ['new moon', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full moon',
   'waning gibbous', 'last quarter', 'waning crescent'];
+const TIDE = ['low tide', 'a quarter up', 'half tide', 'three quarters up', 'high tide'];
 const LABELS = {
   time: { day: 'Day', dusk: 'Dusk', night: 'Night' },
   weather: { clear: 'Clear', cloudy: 'Cloudy', rain: 'Rain', snow: 'Snow' },
@@ -18,12 +19,13 @@ const TEMPERATURE = { spring: 13, summer: 23, autumn: 9, winter: 1 };
 
 const $ = (id) => document.getElementById(id);
 let data, render = null, parseKey = null, url = null, pending = 0, HELP = '';
-const s = { time: 'dusk', weather: 'clear', season: 'summer', wind: 'calm', direction: 'west', moon: 4,
+const s = { time: 'dusk', weather: 'clear', season: 'summer', wind: 'calm', direction: 'west', moon: 4, tide: 'none',
   warning: 'none', day: 'none', extremes: new Set(), animated: true, cards: true };
 
 function key() {
   const p = [`${s.time}-${s.weather}`, s.season, `wind-${s.wind}` + (s.wind === 'calm' ? '' : `-${s.direction}`)];
   if (s.time === 'night' && s.weather === 'clear') p.push(`moon-${s.moon}`);
+  if (s.tide !== 'none') p.push(`tide-${s.tide}`);
   p.push(...[...s.extremes].sort());
   if (s.warning !== 'none') p.push(`warning-${s.warning}`);
   if (s.day !== 'none') p.push(`event-${s.day}`);
@@ -36,6 +38,7 @@ function fromKey(k) {
   Object.assign(s, { time, weather, season: st.season, wind: st.wind, direction: st.direction < 0 ? 'east' : 'west',
     warning: st.warning, day: st.day, extremes: new Set(st.extremes) });
   if (st.moon !== null && st.moon !== undefined) s.moon = st.moon;
+  s.tide = st.tide === null || st.tide === undefined ? 'none' : String(st.tide);
 }
 
 // --- the picture ---------------------------------------------------------
@@ -113,6 +116,7 @@ function sync() {
   for (const b of document.querySelectorAll('.seg[data-name="direction"] button')) b.disabled = s.wind === 'calm';
   $('moon').value = String(s.moon);
   $('moon').disabled = !(s.time === 'night' && s.weather === 'clear');
+  $('tide').value = s.tide;
   $('warning').value = s.warning;
   $('day').value = s.day;
   for (const c of document.querySelectorAll('#extremes input')) c.checked = s.extremes.has(c.value);
@@ -127,6 +131,7 @@ function controls() {
   segment('wind', data.winds, LABELS.wind);
   segment('direction', ['west', 'east'], LABELS.direction);
   options($('moon'), MOON.map((m, i) => [String(i), m]));
+  options($('tide'), [['none', 'No gauge'], ...TIDE.map((t, i) => [String(i), t])]);
   options($('warning'), [['none', 'None'], ...data.warnings.map((w) => [w, LABELS.warnings[w] || w])]);
   options($('day'), [['none', 'None'], ...data.days.map((d) => [d.id, d.name])]);
   for (const e of data.extremes) {
@@ -139,6 +144,7 @@ function controls() {
     $('extremes').append(l);
   }
   $('moon').addEventListener('change', (e) => { s.moon = Number(e.target.value); draw(); });
+  $('tide').addEventListener('change', (e) => { s.tide = e.target.value; draw(); });
   $('warning').addEventListener('change', (e) => { s.warning = e.target.value; draw(); });
   $('day').addEventListener('change', (e) => { s.day = e.target.value; draw(); });
   $('animated').addEventListener('change', (e) => { s.animated = e.target.checked; draw(); });
@@ -190,10 +196,11 @@ function guess(k) {
   const p = k.split('.');
   const [time, weather] = p[0].split('-');
   const w = p[2].split('-');
-  const out = { time, weather, season: p[1], wind: w[1], direction: w[2] || 'west', warning: 'none', day: 'none',
-    extremes: new Set() };
+  const out = { time, weather, season: p[1], wind: w[1], direction: w[2] || 'west', tide: 'none', warning: 'none',
+    day: 'none', extremes: new Set() };
   for (const x of p.slice(3)) {
     if (x.startsWith('moon-')) out.moon = Number(x.slice(5));
+    else if (x.startsWith('tide-')) out.tide = x.slice(5);
     else if (x.startsWith('warning-')) out.warning = x.slice(8);
     else if (x.startsWith('event-')) out.day = x.slice(6);
     else out.extremes.add(x);

@@ -1,4 +1,4 @@
-"""State logic: weather, warnings, special days and memory -> state key and texts.
+"""State logic: weather, warnings, special days, water level and memory -> state key and texts.
 
 Runs with pytest or on its own: python3 tests/test_state.py
 """
@@ -29,12 +29,12 @@ def forecast(now, conditions, temperature=12, gust=20):
 
 
 def run(now, *, elevation=30, condition='sunny', temperature=12, gust=20, wind=None, bearing=270, coming=None,
-        warnings=(), events=(), bin_day=False, memory=Memory(), settings=DE, hours=None):
+        warnings=(), events=(), bin_day=False, water=None, memory=Memory(), settings=DE, hours=None):
     now = at(now) if isinstance(now, str) else now
     if hours is None:
         hours = forecast(now, coming or [condition] * 12, temperature, gust)
     w = Weather(condition, temperature, gust, wind, bearing, hours)
-    return state.update(Inputs(now, elevation, w, tuple(warnings), tuple(events), bin_day), memory, settings)
+    return state.update(Inputs(now, elevation, w, tuple(warnings), tuple(events), bin_day, water), memory, settings)
 
 
 def event(now, **kw):
@@ -115,7 +115,8 @@ def test_every_key_draws():
     assert {kind for kind, _ in state.WARNINGS} == set(golden.WARNINGS)
     weathers = [{}, {'condition': 'cloudy', 'gust': 50, 'bearing': 90}, {'condition': 'rainy', 'coming': ['lightning'] * 12},
                 {'condition': 'snowy', 'gust': 90, 'temperature': -10, 'warnings': ['ORKAN', 'STURMFLUT'],
-                 'memory': Memory(snow_cover=True)}, {'condition': 'fog', 'temperature': 33, 'warnings': ['SCHNEE']}]
+                 'memory': Memory(snow_cover=True)}, {'condition': 'fog', 'temperature': 33, 'warnings': ['SCHNEE']},
+                {'water': 300}, {'water': 560, 'condition': 'rainy'}, {'water': 950, 'gust': 80}]
     t, n, days = at('2026-01-01 00:00'), 0, set()
     while t.year == 2026:
         s, _ = run(t, elevation=(t.hour - 12) * 4, events=['Geburtstag Kim', 'Dom', 'Herbstferien'][n % 4:n % 4 + 1],
@@ -124,6 +125,52 @@ def test_every_key_draws():
         days.update(s.events)
         t, n = t + dt.timedelta(hours=5), n + 1
     assert days == set(state.PRECEDENCE) - {'first-snow', 'cherry-blossom', 'pride', 'blue-port', 'harbour-birthday'}
+
+
+# -- water level: tide and storm surge at Hamburg St. Pauli ---------------------------------------------
+
+def test_tide_steps():
+    steps = [state.tide_step(level) for level in (192, 347, 395, 438, 529, 620, 667, 711, 1065)]
+    assert steps == [0, 0, 1, 1, 2, 3, 4, 4, 4]
+    from render.palette import TIDE_STEPS
+    assert state.TIDE_STEPS == TIDE_STEPS
+
+
+def test_tide_keeps_its_step_near_the_edge():
+    step = 91  # cm per step
+    assert state.tide_step(347 + 1.6 * step, last=1) == 1 and state.tide_step(347 + 1.7 * step, last=1) == 2
+    assert state.tide_step(347 + 1.4 * step, last=2) == 2 and state.tide_step(347 + 1.3 * step, last=2) == 1
+    assert state.tide_step(1065, last=4) == 4 and state.tide_step(100, last=0) == 0
+
+
+def test_tide_in_the_key():
+    s, m = run('2026-11-25 12:00', condition='cloudy', water=400)
+    assert s.key == 'day-cloudy.autumn.wind-calm.tide-1' and s.tide == 1 and m.tide == 1
+    s, _ = run('2026-11-25 23:00', elevation=-30, water=711)
+    assert s.key.startswith('night-clear.autumn.wind-calm.moon-') and s.key.endswith('.tide-4')
+    s, m = run('2026-11-25 12:00')
+    assert 'tide' not in s.key and s.tide is None and m.tide is None   # no gauge, no tide
+
+
+def test_storm_surge_from_the_gauge():
+    s, m = run('2027-01-12 03:00', water=860)
+    assert 'storm-surge' not in s.extremes and s.tide == 4
+    s, m = run('2027-01-12 03:15', water=861, memory=m)
+    assert s.extremes == ('storm-surge',) and s.key == 'day-clear.winter.wind-calm.tide-4.storm-surge'
+    s, m = run('2027-01-12 03:30', water=852, memory=m)
+    assert 'storm-surge' in s.extremes                                  # not over until 10 cm below
+    s, m = run('2027-01-12 03:45', water=850, memory=m)
+    assert 'storm-surge' not in s.extremes and not m.surge
+    s, _ = run('2027-01-12 03:45', water=500, warnings=['Amtliche WARNUNG vor STURMFLUT'])
+    assert 'storm-surge' in s.extremes and s.warning == 'storm-surge'   # a warning still counts on its own
+
+
+def test_gauge_without_answer_keeps_its_picture_for_an_hour():
+    s, m = run('2026-11-25 12:00', water=900)
+    s, m = run('2026-11-25 12:59', memory=m)
+    assert s.tide == 4 and 'storm-surge' in s.extremes
+    s, m = run('2026-11-25 13:00', memory=m)
+    assert s.tide is None and not s.extremes and m.water_seen is None
 
 
 # -- warnings ------------------------------------------------------------------------------------------
@@ -332,6 +379,9 @@ def test_memory_round_trip():
     assert Memory.from_dict(m.to_dict()) == m
     assert Memory.from_dict(None) == Memory()
     assert Memory.from_dict({'warning': 'tornado', 'first_snow': 'gestern', 'warning_seen': 5, 'x': 1}) == Memory()
+    _, m = run('2027-01-12 03:00', water=900)
+    assert m.tide == 4 and m.surge and Memory.from_dict(m.to_dict()) == m
+    assert Memory.from_dict({'tide': 7}) == Memory() and Memory.from_dict({'tide': True}) == Memory()
 
 
 # -- texts ---------------------------------------------------------------------------------------------

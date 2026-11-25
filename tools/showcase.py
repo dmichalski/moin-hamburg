@@ -33,7 +33,7 @@ from render.palette import PALETTES, THEME_COLORS  # noqa: E402
 REEL = (
     'day-clear.summer.wind-calm',
     'day-clear.spring.wind-windy-west.event-harbour-birthday',
-    'day-rain.autumn.wind-windy-west',
+    'day-rain.autumn.wind-windy-west.tide-1',
     'day-cloudy.autumn.wind-storm-west.warning-storm-gusts',
     'night-cloudy.autumn.wind-calm.event-dom',
     'dusk-cloudy.autumn.wind-calm.event-st-martin',

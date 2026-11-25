@@ -1,4 +1,5 @@
-"""Collects weather, sun, warnings and calendars, works out the state and keeps images and theme current."""
+"""Collects weather, sun, warnings, calendars and the water level, works out the state and keeps images and theme
+current."""
 from __future__ import annotations
 
 import dataclasses
@@ -27,6 +28,7 @@ from .const import (
     CONF_EVENT_CALENDARS,
     CONF_KEYWORDS,
     CONF_WARNINGS,
+    CONF_WATER_LEVEL,
     CONF_WEATHER,
     DOMAIN,
     IMAGE_DIR,
@@ -46,6 +48,8 @@ except ImportError:  # Home Assistant before 2026.10
     from voluptuous import Invalid
 
 GONE = (STATE_UNKNOWN, STATE_UNAVAILABLE, '')
+# Water level units a gauge may report, in centimetres.
+CENTIMETRES = {'cm': 1, 'm': 100, 'mm': .1}
 CARDINAL = {d: i * 22.5 for i, d in enumerate(
     ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'))}
 # Frontend internals, read only: which themes are loaded and which is the default.
@@ -61,7 +65,10 @@ class Snapshot:
 
 
 class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
-    """Updates every quarter of an hour, and when the weather or a warning changes."""
+    """Updates every quarter of an hour, and when the weather or a warning changes.
+
+    The water level changes slowly; the quarter-hour updates read it, it triggers none of its own.
+    """
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         super().__init__(hass, LOGGER, config_entry=entry, name=DOMAIN, update_interval=None,
@@ -115,9 +122,11 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
         day = dt_util.start_of_local_day(now)
         bin_day = bool(await self._calendar_titles(self.options.get(CONF_BIN_CALENDARS, []), day, day + dt.timedelta(days=1)))
         inputs = state.Inputs(now, self._sun_elevation(), await self._weather(now), tuple(self._warnings()),
-                              tuple(titles), bin_day)
+                              tuple(titles), bin_day, self._water_level())
         result, memory = state.update(inputs, self.memory, self._settings())
-        significant = dataclasses.replace(memory, updated=None) != dataclasses.replace(self.memory, updated=None)
+        # The clocks of the last update and the last gauge reading move every time; neither needs saving at once.
+        significant = (dataclasses.replace(memory, updated=None, water_seen=None)
+                       != dataclasses.replace(self.memory, updated=None, water_seen=None))
         self.memory = memory
         self._save(urgent=significant)
         written = await self.hass.async_add_executor_job(self.files.write, result.key, result.scene, self.animated)
@@ -214,6 +223,18 @@ class MoinHamburgCoordinator(DataUpdateCoordinator[Snapshot]):
             elif s.state.lower() not in ('off', 'none', '0'):
                 out.append(s.state)
         return out
+
+    def _water_level(self) -> float | None:
+        """The gauge in centimetres, or None if none is set up or it has no answer."""
+        entity_id = self.options.get(CONF_WATER_LEVEL)
+        s = self.hass.states.get(entity_id) if entity_id else None
+        if s is None or s.state in GONE:
+            return None
+        factor = CENTIMETRES.get(str(s.attributes.get('unit_of_measurement') or 'cm').strip().lower())
+        try:
+            return float(s.state) * factor if factor else None
+        except (TypeError, ValueError):
+            return None
 
     async def _calendar_titles(self, entity_ids: list[str], start: dt.datetime, end: dt.datetime) -> list[str]:
         titles = []
